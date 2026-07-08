@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Expense Tracker</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+            <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
+            <p>Personal spending management</p>
+        </header>
+
+        <section class="summary">
+
+            <div class="card income">
+                <h3><i class="fa-solid fa-arrow-trend-up"></i> Total Income</h3>
+                <p id="total-income">0 VND</p>
+            </div>
+
+            <div class="card expense">
+                <h3><i class="fa-solid fa-arrow-trend-down"></i> Total Expense</h3>
+                <p id="total-expense">0 VND</p>
+            </div>
+
+            <div class="card balance">
+                <h3><i class="fa-solid fa-scale-balanced"></i> Balance</h3>
+                <p id="balance">0 VND</p>
+            </div>
+
+        </section>
+
+        <section class="form-section">
+
+            <h2><i class="fa-solid fa-circle-plus"></i> Add Transaction</h2>
+
+            <form id="transaction-form">
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-right-left"></i> Type</label>
+                    <select id="type">
+                        <option value="income">💵 Income</option>
+                        <option value="expense">💸 Expense</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-money-bill-wave"></i> Amount</label>
+                    <div class="money-input">
+                        <input
+                            type="text"
+                            id="amount"
+                            placeholder="0"
+                            inputmode="numeric">
+                        <span>VND</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-tags"></i> Category</label>
+                    <select id="category">
+                        <option>Lương Ameno</option>
+                        <option>Lương Winggo</option>
+                        <option>Chi phí phát sinh</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-pen"></i> Note</label>
+                    <input
+                        type="text"
+                        id="note"
+                        placeholder="Example: Milk tea">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="submit-btn">
+                        <i class="fa-solid fa-plus"></i>
+                        <span id="submit-btn-label">Add Transaction</span>
+                    </button>
+
+                    <button type="button" id="cancel-edit-btn" class="cancel-btn" hidden>
+                        <i class="fa-solid fa-xmark"></i>
+                        Cancel
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+
+        <section class="table-section">
+
+            <h2><i class="fa-solid fa-receipt"></i> Transaction History</h2>
+
+            <div class="history-filters">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-filter"></i> Type</label>
+                    <select id="history-type-filter">
+                        <option value="all">All</option>
+                        <option value="Income">Income</option>
+                        <option value="Expense">Expense</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-calendar-days"></i> Month</label>
+                    <input
+                        type="month"
+                        id="history-month-filter">
+                </div>
+            </div>
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th><i class="fa-solid fa-right-left"></i> Type</th>
+                        <th><i class="fa-solid fa-tags"></i> Category</th>
+                        <th><i class="fa-solid fa-coins"></i> Amount</th>
+                        <th><i class="fa-solid fa-calendar-days"></i> Date</th>
+                        <th><i class="fa-solid fa-note-sticky"></i> Note</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody id="transaction-list">
+                    <!-- Rendered by JavaScript -->
+                </tbody>
+
+            </table>
+
+        </section>
+
+        <section class="chart-section">
+
+            <h2><i class="fa-solid fa-chart-pie"></i> Spending Stats</h2>
+
+            <div class="chart-grid">
+                <div class="chart-panel">
+                    <h3><i class="fa-solid fa-sack-dollar"></i> Income</h3>
+                    <canvas id="incomeChart"></canvas>
+                </div>
+
+                <div class="chart-panel">
+                    <h3><i class="fa-solid fa-credit-card"></i> Expense</h3>
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+
+    <script src="/static/script.js"></script>
+
+</body>
+
+</html>
