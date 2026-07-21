@@ -12,6 +12,8 @@ from models import Base, Expense
 
 BASE_DIR = Path(__file__).resolve().parent
 
+ALLOWED_WALLETS = {"Tiền mặt", "Tài khoản tiết kiệm", "TK ngân hàng"}
+
 app = FastAPI()
 
 reset_expenses_table_if_needed()
@@ -26,6 +28,7 @@ def serialize_expense(expense: Expense) -> dict:
         "id": expense.id,
         "type": expense.transaction_type,
         "category": expense.category,
+        "wallet": expense.wallet,
         "amount": expense.amount,
         "note": expense.note,
         "created_at": expense.created_at.strftime("%Y-%m-%d %H:%M") if expense.created_at else None,
@@ -55,6 +58,7 @@ def list_transactions(db: Session = Depends(get_db)):
 def create_transaction(payload: dict, db: Session = Depends(get_db)):
     transaction_type = str(payload.get("type", "")).strip().lower()
     category = str(payload.get("category", "")).strip()
+    wallet = str(payload.get("wallet", "")).strip()
     note = str(payload.get("note", "")).strip()
 
     try:
@@ -68,12 +72,16 @@ def create_transaction(payload: dict, db: Session = Depends(get_db)):
     if not category:
         raise HTTPException(status_code=400, detail="Category is required.")
 
+    if wallet not in ALLOWED_WALLETS:
+        raise HTTPException(status_code=400, detail="Wallet is required.")
+
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
 
     expense = Expense(
         transaction_type="Income" if transaction_type == "income" else "Expense",
         category=category,
+        wallet=wallet,
         amount=amount,
         note=note or "-",
         created_at=datetime.now(),
@@ -95,6 +103,7 @@ def update_transaction(expense_id: int, payload: dict, db: Session = Depends(get
 
     transaction_type = str(payload.get("type", "")).strip().lower()
     category = str(payload.get("category", "")).strip()
+    wallet = str(payload.get("wallet", "")).strip()
     note = str(payload.get("note", "")).strip()
 
     try:
@@ -108,11 +117,15 @@ def update_transaction(expense_id: int, payload: dict, db: Session = Depends(get
     if not category:
         raise HTTPException(status_code=400, detail="Category is required.")
 
+    if wallet not in ALLOWED_WALLETS:
+        raise HTTPException(status_code=400, detail="Wallet is required.")
+
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
 
     expense.transaction_type = "Income" if transaction_type == "income" else "Expense"
     expense.category = category
+    expense.wallet = wallet
     expense.amount = amount
     expense.note = note or "-"
 

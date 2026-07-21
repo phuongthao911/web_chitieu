@@ -28,6 +28,12 @@ class Expense(Base):
         nullable=False
     )
 
+    wallet = Column(
+        String(50),
+        nullable=False,
+        default="Tiền mặt"
+    )
+
     note = Column(
         String,
         nullable=False,

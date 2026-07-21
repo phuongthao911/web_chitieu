@@ -75,6 +75,7 @@ def reset_expenses_table_if_needed():
             "transaction_type",
             "amount",
             "category",
+            "wallet",
             "note",
             "created_at",
         ]

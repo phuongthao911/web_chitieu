@@ -6,6 +6,7 @@ const form = document.getElementById("transaction-form");
 const amountInput = document.getElementById("amount");
 const typeInput = document.getElementById("type");
 const categoryInput = document.getElementById("category");
+const walletInput = document.getElementById("wallet");
 const noteInput = document.getElementById("note");
 const tbody = document.getElementById("transaction-list");
 const totalIncomeEl = document.getElementById("total-income");
@@ -15,6 +16,7 @@ const chartCanvas = document.getElementById("expenseChart");
 const incomeChartCanvas = document.getElementById("incomeChart");
 const historyTypeFilter = document.getElementById("history-type-filter");
 const historyMonthFilter = document.getElementById("history-month-filter");
+const historyWalletFilter = document.getElementById("history-wallet-filter");
 const submitBtn = document.getElementById("submit-btn");
 const submitBtnLabel = document.getElementById("submit-btn-label");
 const cancelEditBtn = document.getElementById("cancel-edit-btn");
@@ -163,12 +165,14 @@ function updateChart() {
 function getVisibleTransactions() {
     const selectedType = historyTypeFilter.value;
     const selectedMonth = historyMonthFilter.value;
+    const selectedWallet = historyWalletFilter.value;
 
     return transactions.filter(transaction => {
         const matchesType = selectedType === "all" || transaction.type === selectedType;
         const matchesMonth = !selectedMonth || transaction.created_at.startsWith(selectedMonth);
+        const matchesWallet = selectedWallet === "all" || transaction.wallet === selectedWallet;
 
-        return matchesType && matchesMonth;
+        return matchesType && matchesMonth && matchesWallet;
     });
 }
 
@@ -181,7 +185,7 @@ function renderTable() {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
 
-        cell.colSpan = 6;
+        cell.colSpan = 7;
         cell.textContent = "No transactions found.";
         row.appendChild(cell);
         tbody.appendChild(row);
@@ -198,6 +202,9 @@ function renderTable() {
 
         const categoryCell = document.createElement("td");
         categoryCell.textContent = transaction.category;
+
+        const walletCell = document.createElement("td");
+        walletCell.textContent = transaction.wallet;
 
         const amountCell = document.createElement("td");
         amountCell.textContent = formatMoney(transaction.amount);
@@ -230,6 +237,7 @@ function renderTable() {
 
         row.appendChild(typeCell);
         row.appendChild(categoryCell);
+        row.appendChild(walletCell);
         row.appendChild(amountCell);
         row.appendChild(dateCell);
         row.appendChild(noteCell);
@@ -293,6 +301,7 @@ function enterEditMode(transaction) {
     const type = transaction.type.toLowerCase();
     typeInput.value = type;
     populateCategoryOptions(type, transaction.category);
+    walletInput.value = transaction.wallet;
     noteInput.value = transaction.note === "-" ? "" : transaction.note;
     amountInput.value = formatAmountInput(String(transaction.amount / 1000));
 
@@ -341,6 +350,7 @@ form.addEventListener("submit", async event => {
     const payload = {
         type: typeInput.value,
         category: categoryInput.value,
+        wallet: walletInput.value,
         amount,
         note: noteInput.value.trim()
     };
@@ -388,6 +398,7 @@ typeInput.addEventListener("change", () => {
 
 historyTypeFilter.addEventListener("change", renderTable);
 historyMonthFilter.addEventListener("change", renderTable);
+historyWalletFilter.addEventListener("change", renderTable);
 
 resetAmountInput();
 populateCategoryOptions(typeInput.value);

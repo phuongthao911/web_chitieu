@@ -83,6 +83,15 @@
                 </div>
 
                 <div class="form-group">
+                    <label><i class="fa-solid fa-wallet"></i> Wallet</label>
+                    <select id="wallet">
+                        <option value="Tiền mặt">💵 Tiền mặt</option>
+                        <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
+                        <option value="TK ngân hàng">💳 TK ngân hàng</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label><i class="fa-solid fa-pen"></i> Note</label>
                     <input
                         type="text"
@@ -126,6 +135,16 @@
                         type="month"
                         id="history-month-filter">
                 </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-wallet"></i> Wallet</label>
+                    <select id="history-wallet-filter">
+                        <option value="all">All</option>
+                        <option value="Tiền mặt">Tiền mặt</option>
+                        <option value="Tài khoản tiết kiệm">Tài khoản tiết kiệm</option>
+                        <option value="TK ngân hàng">TK ngân hàng</option>
+                    </select>
+                </div>
             </div>
 
             <table>
@@ -134,6 +153,7 @@
                     <tr>
                         <th><i class="fa-solid fa-right-left"></i> Type</th>
                         <th><i class="fa-solid fa-tags"></i> Category</th>
+                        <th><i class="fa-solid fa-wallet"></i> Wallet</th>
                         <th><i class="fa-solid fa-coins"></i> Amount</th>
                         <th><i class="fa-solid fa-calendar-days"></i> Date</th>
                         <th><i class="fa-solid fa-note-sticky"></i> Note</th>
