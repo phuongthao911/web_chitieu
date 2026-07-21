@@ -146,7 +146,8 @@ header::after {
 .card,
 .form-section,
 .table-section,
-.chart-section {
+.chart-section,
+.wallet-summary {
     background: var(--sakura-white);
     border-radius: var(--radius-lg);
     box-shadow: 0 10px 26px var(--sakura-shadow);
@@ -169,6 +170,7 @@ header::after {
 .summary .card:nth-child(1) { animation-delay: .05s; }
 .summary .card:nth-child(2) { animation-delay: .15s; }
 .summary .card:nth-child(3) { animation-delay: .25s; }
+.wallet-summary { animation-delay: .28s; }
 .form-section { animation-delay: .3s; }
 .table-section { animation-delay: .4s; }
 .chart-section { animation-delay: .5s; }
@@ -181,6 +183,80 @@ header::after {
     display: flex;
     gap: 20px;
     margin-bottom: 30px;
+}
+
+/* =========================
+   WALLET SUMMARY
+========================= */
+
+.wallet-summary {
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.wallet-summary h2 {
+    margin-bottom: 20px;
+    color: var(--sakura-plum);
+}
+
+.wallet-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.wallet-card {
+    background: var(--sakura-pale);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    border: 1px solid #ffd9e6;
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.wallet-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px var(--sakura-shadow);
+}
+
+.wallet-card h3 {
+    color: var(--sakura-plum);
+    margin-bottom: 14px;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.wallet-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-bottom: 1px dashed #ffd9e6;
+}
+
+.wallet-stat:last-child {
+    border-bottom: none;
+}
+
+.wallet-stat span:first-child {
+    color: var(--sakura-plum-soft);
+    font-weight: 600;
+}
+
+.wallet-stat span:last-child {
+    font-weight: 700;
+}
+
+.wallet-stat.income span:last-child {
+    color: var(--sakura-income);
+}
+
+.wallet-stat.expense span:last-child {
+    color: var(--sakura-expense);
+}
+
+.wallet-stat.balance span:last-child {
+    color: var(--sakura-gold);
 }
 
 .card {
@@ -481,6 +557,10 @@ button i {
 
     .summary{
         flex-direction: column;
+    }
+
+    .wallet-summary-grid{
+        grid-template-columns: 1fr;
     }
 
     form{

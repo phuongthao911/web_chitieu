@@ -17,6 +17,12 @@ const incomeChartCanvas = document.getElementById("incomeChart");
 const historyTypeFilter = document.getElementById("history-type-filter");
 const historyMonthFilter = document.getElementById("history-month-filter");
 const historyWalletFilter = document.getElementById("history-wallet-filter");
+
+const WALLET_ID_MAP = {
+    "Tiền mặt": "cash",
+    "Tài khoản tiết kiệm": "savings",
+    "TK ngân hàng": "bank"
+};
 const submitBtn = document.getElementById("submit-btn");
 const submitBtnLabel = document.getElementById("submit-btn-label");
 const cancelEditBtn = document.getElementById("cancel-edit-btn");
@@ -126,6 +132,30 @@ function updateSummary() {
     totalIncomeEl.textContent = formatMoney(income);
     totalExpenseEl.textContent = formatMoney(expense);
     balanceEl.textContent = formatMoney(income - expense);
+
+    updateWalletSummary();
+}
+
+function updateWalletSummary() {
+    Object.entries(WALLET_ID_MAP).forEach(([walletName, idPrefix]) => {
+        const walletTransactions = transactions.filter(transaction => transaction.wallet === walletName);
+
+        const income = walletTransactions
+            .filter(transaction => transaction.type === "Income")
+            .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+        const expense = walletTransactions
+            .filter(transaction => transaction.type === "Expense")
+            .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+        const incomeEl = document.getElementById(`wallet-${idPrefix}-income`);
+        const expenseEl = document.getElementById(`wallet-${idPrefix}-expense`);
+        const walletBalanceEl = document.getElementById(`wallet-${idPrefix}-balance`);
+
+        if (incomeEl) incomeEl.textContent = formatMoney(income);
+        if (expenseEl) expenseEl.textContent = formatMoney(expense);
+        if (walletBalanceEl) walletBalanceEl.textContent = formatMoney(income - expense);
+    });
 }
 
 function updateChart() {
