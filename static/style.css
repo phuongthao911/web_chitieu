@@ -201,14 +201,14 @@ header::after {
 
 .wallet-summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 20px;
 }
 
 .wallet-card {
     background: var(--sakura-pale);
     border-radius: var(--radius-md);
-    padding: 18px;
+    padding: 20px 22px;
     border: 1px solid #ffd9e6;
     transition: transform .25s ease, box-shadow .25s ease;
 }
@@ -220,42 +220,52 @@ header::after {
 
 .wallet-card h3 {
     color: var(--sakura-plum);
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 17px;
 }
 
-.wallet-stat {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    font-size: 14px;
-    border-bottom: 1px dashed #ffd9e6;
+.wallet-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
 }
 
-.wallet-stat:last-child {
-    border-bottom: none;
+.wallet-mini-stat {
+    background: var(--sakura-white);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    border: 1px solid #ffe6ee;
 }
 
-.wallet-stat span:first-child {
+.wallet-mini-label {
+    display: block;
     color: var(--sakura-plum-soft);
     font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 10px;
 }
 
-.wallet-stat span:last-child {
-    font-weight: 700;
+.wallet-mini-label i {
+    color: var(--sakura-rose);
+    margin-right: 6px;
 }
 
-.wallet-stat.income span:last-child {
+.wallet-mini-value {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.wallet-mini-stat.income .wallet-mini-value {
     color: var(--sakura-income);
 }
 
-.wallet-stat.expense span:last-child {
+.wallet-mini-stat.expense .wallet-mini-value {
     color: var(--sakura-expense);
 }
 
-.wallet-stat.balance span:last-child {
+.wallet-mini-stat.balance .wallet-mini-value {
     color: var(--sakura-gold);
 }
 
@@ -560,6 +570,10 @@ button i {
     }
 
     .wallet-summary-grid{
+        grid-template-columns: 1fr;
+    }
+
+    .wallet-stats-row{
         grid-template-columns: 1fr;
     }
 
