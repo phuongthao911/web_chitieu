@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
