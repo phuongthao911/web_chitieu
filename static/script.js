@@ -485,3 +485,20 @@ loadTransactions().catch(error => {
     console.error(error);
     alert(error.message);
 });
+
+// Backup Dropdown Logic
+const backupBtn = document.getElementById("backup-btn");
+const backupDropdown = document.getElementById("backup-dropdown");
+
+if (backupBtn && backupDropdown) {
+    backupBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        backupDropdown.classList.toggle("show");
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!backupBtn.contains(e.target) && !backupDropdown.contains(e.target)) {
+            backupDropdown.classList.remove("show");
+        }
+    });
+}

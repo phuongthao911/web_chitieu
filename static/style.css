@@ -77,6 +77,9 @@ header {
     position: relative;
     padding: 6px 0 6px 4px;
     overflow: visible;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 header h1 {
@@ -89,6 +92,68 @@ header h1 {
 
 header p {
     color: var(--sakura-plum-soft);
+}
+
+.backup-container {
+    position: relative;
+}
+
+.backup-btn {
+    background: linear-gradient(135deg, var(--sakura-gold), var(--sakura-rose));
+    padding: 10px 20px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+    white-space: nowrap;
+}
+
+.backup-btn:hover {
+    background: linear-gradient(135deg, var(--sakura-gold), var(--sakura-deep));
+}
+
+.backup-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--sakura-white);
+    border: 1px solid #ffd9e6;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 20px var(--sakura-shadow);
+    display: none;
+    flex-direction: column;
+    min-width: 170px;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.backup-dropdown.show {
+    display: flex;
+}
+
+.backup-dropdown a {
+    color: var(--sakura-plum);
+    padding: 12px 16px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
+    text-align: left;
+}
+
+.backup-dropdown a:hover {
+    background: var(--sakura-pale);
+    color: var(--sakura-rose);
+}
+
+.backup-dropdown a i {
+    color: var(--sakura-rose);
+    font-size: 16px;
+    margin-right: 0;
 }
 
 header::before,
@@ -564,6 +629,27 @@ button i {
 ========================= */
 
 @media (max-width:768px){
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .backup-container {
+        width: 100%;
+    }
+
+    .backup-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .backup-dropdown {
+        width: 100%;
+        left: 0;
+        right: auto;
+    }
 
     .summary{
         flex-direction: column;

@@ -81,7 +81,18 @@ def reset_expenses_table_if_needed():
         ]
 
         if columns != desired_columns:
+            # If table is empty, we can just drop it
             row_count = connection.execute(text("SELECT COUNT(*) FROM expenses")).scalar_one()
-
             if row_count == 0:
                 connection.execute(text("DROP TABLE expenses"))
+            else:
+                # Add any missing columns dynamically
+                for col in desired_columns:
+                    if col not in columns:
+                        if col == "wallet":
+                            connection.execute(text("ALTER TABLE expenses ADD COLUMN wallet VARCHAR(50) DEFAULT 'Tiền mặt'"))
+                        elif col == "note":
+                            connection.execute(text("ALTER TABLE expenses ADD COLUMN note VARCHAR DEFAULT ''"))
+                        elif col == "created_at":
+                            connection.execute(text("ALTER TABLE expenses ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                        # Add other columns if needed in the future
