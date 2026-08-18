@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
-from models import Base, Expense, Category, get_vietnam_time
+from models import Base, Expense, Category, Budget, get_vietnam_time
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -305,3 +305,75 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
     db.delete(cat)
     db.commit()
     return {"ok": True}
+
+
+@app.get("/api/budgets")
+def get_budgets(month: str, db: Session = Depends(get_db)):
+    # Validate format YYYY-MM
+    if len(month) != 7 or month[4] != "-":
+        raise HTTPException(status_code=400, detail="Invalid month format. Expected YYYY-MM.")
+
+    # Get all expense categories
+    categories = db.query(Category).filter(Category.type == "expense").all()
+
+    # Get budgets set for this month
+    budgets = db.query(Budget).filter(Budget.month == month).all()
+    budget_map = {b.category_name: b for b in budgets}
+
+    # Calculate actual spending for each category in this month
+    # Note: SQLite and Postgres have different date functions, but we can filter using string start
+    # e.g., created_at starts with the 'month' string.
+    # To be fully DB-agnostic, we can query transactions of this month and sum in Python,
+    # since data volume is usually small, or filter date ranges.
+    # Let's filter expenses in Python or simple like query:
+    start_date = f"{month}-01 00:00:00"
+    # We will find all expenses created in this month
+    expenses = db.query(Expense).filter(
+        Expense.transaction_type == "Expense"
+    ).all()
+
+    # Filter in memory to ensure complete database compatibility (Postgres/SQLite)
+    spending_map = {}
+    for exp in expenses:
+        exp_date_str = exp.created_at.strftime("%Y-%m") if exp.created_at else ""
+        if exp_date_str == month:
+            spending_map[exp.category] = spending_map.get(exp.category, 0.0) + exp.amount
+
+    result = []
+    for cat in categories:
+        b = budget_map.get(cat.name)
+        result.append({
+            "category_name": cat.name,
+            "amount_limit": b.amount_limit if b else 0.0,
+            "actual_spending": spending_map.get(cat.name, 0.0),
+            "month": month
+        })
+
+    return result
+
+
+@app.post("/api/budgets")
+def save_budget(payload: dict, db: Session = Depends(get_db)):
+    category_name = str(payload.get("category_name", "")).strip()
+    month = str(payload.get("month", "")).strip()
+    try:
+        amount_limit = float(payload.get("amount_limit"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Amount limit must be a number.")
+
+    if not category_name or not month:
+        raise HTTPException(status_code=400, detail="Category name and month are required.")
+    if amount_limit < 0:
+        raise HTTPException(status_code=400, detail="Amount limit cannot be negative.")
+
+    # Check if budget already exists for this category/month
+    b = db.query(Budget).filter(Budget.category_name == category_name, Budget.month == month).first()
+    if b:
+        b.amount_limit = amount_limit
+    else:
+        b = Budget(category_name=category_name, month=month, amount_limit=amount_limit)
+        db.add(b)
+
+    db.commit()
+    db.refresh(b)
+    return {"category_name": b.category_name, "month": b.month, "amount_limit": b.amount_limit}

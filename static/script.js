@@ -41,6 +41,9 @@ const categoryListTbody = document.getElementById("category-list");
 const categoryFormTitle = document.getElementById("category-form-title");
 const trendChartCanvas = document.getElementById("trendChart");
 
+const budgetMonthFilter = document.getElementById("budget-month-filter");
+const budgetItemsContainer = document.getElementById("budget-items-container");
+
 let editingCategoryId = null;
 
 const CATEGORY_COLOR_PALETTE = [
@@ -330,7 +333,98 @@ async function loadTransactions() {
 
     transactions = await response.json();
     await loadCategories();
+    if (budgetMonthFilter) {
+        budgetMonthFilter.value = getCurrentMonthValue();
+    }
+    await loadBudgets();
     renderTable();
+}
+
+async function loadBudgets() {
+    if (!budgetMonthFilter) return;
+    const month = budgetMonthFilter.value;
+    const response = await fetch(`/api/budgets?month=${month}`);
+    if (!response.ok) {
+        console.error("Failed to load budgets");
+        return;
+    }
+    const budgets = await response.json();
+    renderBudgets(budgets);
+}
+
+function renderBudgets(budgets) {
+    if (!budgetItemsContainer) return;
+    budgetItemsContainer.innerHTML = "";
+
+    if (budgets.length === 0) {
+        budgetItemsContainer.innerHTML = "<p>Vui lòng thêm danh mục chi tiêu trước.</p>";
+        return;
+    }
+
+    budgets.forEach(b => {
+        const percent = b.amount_limit > 0 ? (b.actual_spending / b.amount_limit) * 100 : 0;
+        
+        let statusClass = "status-safe";
+        if (percent >= 100) {
+            statusClass = "status-danger";
+        } else if (percent >= 80) {
+            statusClass = "status-warning";
+        }
+
+        const itemDiv = document.createElement("div");
+        itemDiv.className = `budget-card ${statusClass}`;
+        
+        itemDiv.innerHTML = `
+            <div class="budget-info">
+                <span class="budget-cat-name">💸 ${b.category_name}</span>
+                <span class="budget-ratio">${formatMoney(b.actual_spending)} / <span class="limit-label" id="limit-text-${b.category_name}">${b.amount_limit > 0 ? formatMoney(b.amount_limit) : "Chưa đặt"}</span></span>
+            </div>
+            <div class="budget-progress-bg">
+                <div class="budget-progress-bar" style="width: ${Math.min(percent, 100)}%"></div>
+            </div>
+            <div class="budget-actions">
+                <input type="text" placeholder="Đặt hạn mức..." id="input-limit-${b.category_name}" class="budget-input-field" value="${b.amount_limit > 0 ? b.amount_limit / 1000 : ""}">
+                <button type="button" class="budget-save-btn" onclick="saveCategoryBudget('${b.category_name}')">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                </button>
+            </div>
+            ${percent >= 100 ? '<span class="budget-warn-badge"><i class="fa-solid fa-triangle-exclamation"></i> ĐÃ VƯỢT HẠN MỨC!</span>' : percent >= 80 ? '<span class="budget-warn-badge warning"><i class="fa-solid fa-circle-exclamation"></i> Sắp vượt hạn mức!</span>' : ''}
+        `;
+        budgetItemsContainer.appendChild(itemDiv);
+    });
+}
+
+async function saveCategoryBudget(categoryName) {
+    const inputEl = document.getElementById(`input-limit-${categoryName}`);
+    if (!inputEl) return;
+    const value = inputEl.value.replace(/,/g, "").trim();
+    if (!value || isNaN(value)) {
+        alert("Vui lòng nhập hạn mức hợp lệ.");
+        return;
+    }
+    const limitAmount = Number(value) * 1000;
+    const month = budgetMonthFilter.value;
+
+    try {
+        const response = await fetch("/api/budgets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                category_name: categoryName,
+                month: month,
+                amount_limit: limitAmount
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || "Không thể lưu ngân sách");
+        }
+
+        await loadBudgets();
+    } catch (e) {
+        alert(e.message);
+    }
 }
 
 async function loadCategories() {
@@ -546,6 +640,11 @@ typeInput.addEventListener("change", () => {
 historyTypeFilter.addEventListener("change", renderTable);
 historyMonthFilter.addEventListener("change", renderTable);
 historyWalletFilter.addEventListener("change", renderTable);
+if (budgetMonthFilter) {
+    budgetMonthFilter.addEventListener("change", loadBudgets);
+}
+window.saveCategoryBudget = saveCategoryBudget;
+
 if (historySearch) {
     historySearch.addEventListener("input", renderTable);
     historySearch.addEventListener("keydown", (e) => {

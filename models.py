@@ -72,3 +72,28 @@ class Category(Base):
         String(20),
         nullable=False  # "income" or "expense"
     )
+
+
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    category_name = Column(
+        String(100),
+        nullable=False
+    )
+
+    amount_limit = Column(
+        Float,
+        nullable=False
+    )
+
+    month = Column(
+        String(7),  # "YYYY-MM"
+        nullable=False
+    )

@@ -791,3 +791,146 @@ button i {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+   BUDGET MANAGEMENT
+========================= */
+.budget-section {
+    margin-top: 30px;
+    padding: 25px;
+}
+
+.budget-header-controls {
+    margin-bottom: 20px;
+    max-width: 250px;
+}
+
+.budget-grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.budget-card {
+    background: var(--sakura-white);
+    border: 1px solid #ffd9e6;
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: 0 4px 12px var(--sakura-shadow);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+}
+
+.budget-card:hover {
+    transform: translateY(-2px);
+}
+
+.budget-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.budget-cat-name {
+    color: var(--sakura-plum);
+    font-size: 16px;
+}
+
+.budget-ratio {
+    font-size: 14px;
+}
+
+.limit-label {
+    color: var(--sakura-rose);
+}
+
+.budget-progress-bg {
+    background: var(--sakura-pale);
+    border-radius: var(--radius-pill);
+    height: 10px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.budget-progress-bar {
+    height: 100%;
+    border-radius: var(--radius-pill);
+    transition: width 0.3s ease;
+}
+
+/* Progress and status colors */
+.status-safe .budget-progress-bar {
+    background: linear-gradient(90deg, #a3e2c9, #6fc79a);
+}
+
+.status-warning .budget-progress-bar {
+    background: linear-gradient(90deg, #fce0a2, var(--sakura-gold));
+}
+.status-warning {
+    border-color: var(--sakura-gold);
+}
+
+.status-danger .budget-progress-bar {
+    background: linear-gradient(90deg, #ffa8b6, var(--sakura-expense));
+}
+.status-danger {
+    border-color: var(--sakura-expense);
+    background-color: #fff5f7;
+}
+
+.budget-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.budget-input-field {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid #ffd9e6;
+    border-radius: var(--radius-sm);
+    color: var(--sakura-plum);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.budget-input-field:focus {
+    border-color: var(--sakura-rose);
+}
+
+.budget-save-btn {
+    background: linear-gradient(135deg, var(--sakura-gold), var(--sakura-rose));
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.budget-save-btn:hover {
+    opacity: 0.9;
+}
+
+.budget-warn-badge {
+    position: absolute;
+    top: -10px;
+    right: 12px;
+    background-color: var(--sakura-expense);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.budget-warn-badge.warning {
+    background-color: var(--sakura-gold);
+}
