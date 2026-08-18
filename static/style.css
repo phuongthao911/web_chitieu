@@ -502,7 +502,7 @@ tr.editing-row {
 
 .history-filters {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 18px;
 }
@@ -684,4 +684,22 @@ button i {
         overflow-x:auto;
     }
 
+}
+
+.search-group input[type="text"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ffd9e6;
+    border-radius: var(--radius-sm);
+    background-color: var(--sakura-white);
+    color: var(--sakura-plum);
+    font-size: 14px;
+    font-weight: 500;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.search-group input[type="text"]:focus {
+    outline: none;
+    border-color: var(--sakura-rose);
+    box-shadow: 0 0 8px rgba(242, 120, 158, 0.3);
 }

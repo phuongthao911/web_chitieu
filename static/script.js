@@ -17,6 +17,7 @@ const incomeChartCanvas = document.getElementById("incomeChart");
 const historyTypeFilter = document.getElementById("history-type-filter");
 const historyMonthFilter = document.getElementById("history-month-filter");
 const historyWalletFilter = document.getElementById("history-wallet-filter");
+const historySearch = document.getElementById("history-search");
 
 const WALLET_ID_MAP = {
     "Tiền mặt": "cash",
@@ -196,13 +197,22 @@ function getVisibleTransactions() {
     const selectedType = historyTypeFilter.value;
     const selectedMonth = historyMonthFilter.value;
     const selectedWallet = historyWalletFilter.value;
+    const searchText = historySearch ? historySearch.value.trim().toLowerCase() : "";
 
     return transactions.filter(transaction => {
         const matchesType = selectedType === "all" || transaction.type === selectedType;
         const matchesMonth = !selectedMonth || transaction.created_at.startsWith(selectedMonth);
         const matchesWallet = selectedWallet === "all" || transaction.wallet === selectedWallet;
 
-        return matchesType && matchesMonth && matchesWallet;
+        let matchesSearch = true;
+        if (searchText) {
+            const matchesNote = transaction.note && String(transaction.note).toLowerCase().includes(searchText);
+            const matchesAmount = String(transaction.amount).includes(searchText);
+            const matchesCategory = transaction.category && String(transaction.category).toLowerCase().includes(searchText);
+            matchesSearch = matchesNote || matchesAmount || matchesCategory;
+        }
+
+        return matchesType && matchesMonth && matchesWallet && matchesSearch;
     });
 }
 
@@ -429,6 +439,9 @@ typeInput.addEventListener("change", () => {
 historyTypeFilter.addEventListener("change", renderTable);
 historyMonthFilter.addEventListener("change", renderTable);
 historyWalletFilter.addEventListener("change", renderTable);
+if (historySearch) {
+    historySearch.addEventListener("input", renderTable);
+}
 
 resetAmountInput();
 populateCategoryOptions(typeInput.value);
