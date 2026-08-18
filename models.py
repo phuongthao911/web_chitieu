@@ -5,8 +5,9 @@ from datetime import datetime, timezone, timedelta
 from database import Base
 
 
-def now_vn():
-    return datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
+def get_vietnam_time() -> datetime:
+    vn_tz = timezone(timedelta(hours=7))
+    return datetime.now(vn_tz).replace(tzinfo=None)
 
 
 class Expense(Base):
@@ -47,6 +48,6 @@ class Expense(Base):
 
     created_at = Column(
         DateTime,
-        default=now_vn,
+        default=get_vietnam_time,
         nullable=False
     )
