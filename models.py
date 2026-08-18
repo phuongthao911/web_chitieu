@@ -1,8 +1,12 @@
 # pyrefly: ignore [missing-import]
 from sqlalchemy import Column, Integer, String, Float, DateTime
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from database import Base
+
+
+def get_vietnam_time():
+    return datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
 
 
 class Expense(Base):
@@ -43,6 +47,6 @@ class Expense(Base):
 
     created_at = Column(
         DateTime,
-        default=datetime.now,
+        default=get_vietnam_time,
         nullable=False
     )

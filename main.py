@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
-from models import Base, Expense
+from models import Base, Expense, get_vietnam_time
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -60,7 +60,7 @@ def backup_json(db: Session = Depends(get_db)):
         .all()
     )
     data = [serialize_expense(expense) for expense in expenses]
-    filename = f"expense_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    filename = f"expense_backup_{get_vietnam_time().strftime('%Y%m%d_%H%M%S')}.json"
     from fastapi.responses import JSONResponse
     headers = {"Content-Disposition": f"attachment; filename={filename}"}
     return JSONResponse(content=data, headers=headers)
@@ -97,7 +97,7 @@ def backup_csv(db: Session = Depends(get_db)):
             expense.created_at.strftime("%Y-%m-%d %H:%M") if expense.created_at else ""
         ])
     
-    filename = f"expense_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"expense_backup_{get_vietnam_time().strftime('%Y%m%d_%H%M%S')}.csv"
     headers = {"Content-Disposition": f"attachment; filename={filename}"}
     return Response(content=output.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)
 
@@ -142,7 +142,7 @@ def create_transaction(payload: dict, db: Session = Depends(get_db)):
         wallet=wallet,
         amount=amount,
         note=note or "-",
-        created_at=datetime.now(),
+        created_at=get_vietnam_time(),
     )
 
     db.add(expense)
