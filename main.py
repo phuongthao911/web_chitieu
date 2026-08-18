@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 # pyrefly: ignore [missing-import]
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
@@ -34,6 +35,12 @@ def serialize_expense(expense: Expense) -> dict:
         "note": expense.note,
         "created_at": expense.created_at.strftime("%Y-%m-%d %H:%M") if expense.created_at else None,
     }
+
+
+@app.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {"status": "ok"}
 
 
 @app.get("/")
