@@ -278,7 +278,7 @@ function renderTable() {
         categoryCell.textContent = transaction.category;
 
         const walletCell = document.createElement("td");
-        walletCell.textContent = transaction.wallet;
+        walletCell.textContent = transaction.wallet === "TK ngân hàng" ? "Tài khoản ngân hàng" : transaction.wallet;
 
         const amountCell = document.createElement("td");
         amountCell.textContent = formatMoney(transaction.amount);
