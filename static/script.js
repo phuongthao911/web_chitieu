@@ -25,7 +25,7 @@ const searchBtn = document.getElementById("search-btn");
 const WALLET_ID_MAP = {
     "Tiền mặt": "cash",
     "Tài khoản tiết kiệm": "savings",
-    "Tài khoản ngân hàng": "bank"
+    "TK ngân hàng": "bank"
 };
 const submitBtn = document.getElementById("submit-btn");
 const submitBtnLabel = document.getElementById("submit-btn-label");
