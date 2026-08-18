@@ -1,6 +1,8 @@
 let transactions = [];
 let expenseChart = null;
 let incomeChart = null;
+let trendChart = null;
+let dbCategories = []; // Loaded from API
 
 const form = document.getElementById("transaction-form");
 const amountInput = document.getElementById("amount");
@@ -29,6 +31,18 @@ const submitBtn = document.getElementById("submit-btn");
 const submitBtnLabel = document.getElementById("submit-btn-label");
 const cancelEditBtn = document.getElementById("cancel-edit-btn");
 
+// Category UI selectors
+const categoryForm = document.getElementById("category-form");
+const categoryNameInput = document.getElementById("category-name");
+const categoryTypeInput = document.getElementById("category-type");
+const categorySubmitBtn = document.getElementById("category-submit-btn");
+const categoryCancelBtn = document.getElementById("category-cancel-btn");
+const categoryListTbody = document.getElementById("category-list");
+const categoryFormTitle = document.getElementById("category-form-title");
+const trendChartCanvas = document.getElementById("trendChart");
+
+let editingCategoryId = null;
+
 const CATEGORY_COLOR_PALETTE = [
     "#f2789e", "#eb9c5c", "#6fc79a", "#8ec9e0",
     "#c99ee0", "#f3b95f", "#5cb99a", "#f39fc0",
@@ -49,40 +63,19 @@ function getColorForCategory(category) {
 
 let editingId = null;
 
-const CATEGORY_OPTIONS = {
-    income: [
-        { value: "Lương Ameno", label: "💰 Lương Ameno" },
-        { value: "Lương Winggo", label: "💰 Lương Winggo" },
-        { value: "Chi phí phát sinh", label: "🧾 Chi phí phát sinh" },
-        { value: "Other", label: "📋 Other" }
-    ],
-    expense: [
-        { value: "Đổ xăng", label: "⛽ Đổ xăng" },
-        { value: "Ăn ngoài", label: "🍽️ Ăn ngoài" },
-        { value: "Đi chợ", label: "🛒 Đi chợ" },
-        { value: "Chi phí phát sinh", label: "🧾 Chi phí phát sinh" },
-        { value: "Gửi xe", label: "🅿️ Gửi xe" },
-        { value: "Đi chơi", label: "🎉 Đi chơi" },
-        { value: "Trả nợ", label: "💳 Trả nợ" },
-        { value: "Quỹ Ameno", label: "🏦 Quỹ Ameno" },
-        { value: "Shopping online", label: "🛍️ Shopping online" },
-        { value: "Other", label: "📋 Other" }
-    ]
-};
-
 function populateCategoryOptions(type, selectedCategory) {
-    const options = CATEGORY_OPTIONS[type] || [];
+    const options = dbCategories.filter(cat => cat.type === type);
 
     categoryInput.innerHTML = "";
 
-    options.forEach(({ value, label }) => {
+    options.forEach(cat => {
         const option = document.createElement("option");
-        option.value = value;
-        option.textContent = label;
+        option.value = cat.name;
+        option.textContent = (type === "income" ? "💰 " : "💸 ") + cat.name;
         categoryInput.appendChild(option);
     });
 
-    const values = options.map(option => option.value);
+    const values = options.map(option => option.name);
 
     if (selectedCategory && values.includes(selectedCategory)) {
         categoryInput.value = selectedCategory;
@@ -192,6 +185,43 @@ function updateChart() {
         expenseChart.data.datasets[0].backgroundColor = expenseLabels.map(getColorForCategory);
         expenseChart.update();
     }
+
+    updateTrendChart(visibleTransactions);
+}
+
+function updateTrendChart(visibleTransactions) {
+    if (!trendChart) return;
+
+    // Group transactions by date (YYYY-MM-DD)
+    const grouped = {};
+    visibleTransactions.forEach(t => {
+        const dateStr = t.created_at ? t.created_at.split(" ")[0] : "";
+        if (!dateStr) return;
+        if (!grouped[dateStr]) {
+            grouped[dateStr] = { income: 0, expense: 0 };
+        }
+        if (t.type === "Income") {
+            grouped[dateStr].income += Number(t.amount);
+        } else if (t.type === "Expense") {
+            grouped[dateStr].expense += Number(t.amount);
+        }
+    });
+
+    // Sort dates chronologically
+    const sortedDates = Object.keys(grouped).sort();
+
+    const incomeData = [];
+    const expenseData = [];
+
+    sortedDates.forEach(date => {
+        incomeData.push(grouped[date].income);
+        expenseData.push(grouped[date].expense);
+    });
+
+    trendChart.data.labels = sortedDates;
+    trendChart.data.datasets[0].data = incomeData;
+    trendChart.data.datasets[1].data = expenseData;
+    trendChart.update();
 }
 
 function getVisibleTransactions() {
@@ -299,7 +329,83 @@ async function loadTransactions() {
     }
 
     transactions = await response.json();
+    await loadCategories();
     renderTable();
+}
+
+async function loadCategories() {
+    const response = await fetch("/api/categories");
+    if (!response.ok) {
+        throw new Error("Failed to load categories.");
+    }
+    dbCategories = await response.json();
+    populateCategoryOptions(typeInput.value);
+    renderCategoryList();
+}
+
+function renderCategoryList() {
+    if (!categoryListTbody) return;
+    categoryListTbody.innerHTML = "";
+    dbCategories.forEach(cat => {
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.textContent = cat.name;
+
+        const typeCell = document.createElement("td");
+        typeCell.textContent = cat.type === "income" ? "Income" : "Expense";
+
+        const actionCell = document.createElement("td");
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "edit-btn";
+        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        editBtn.addEventListener("click", () => enterCategoryEditMode(cat));
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "delete-btn";
+        deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        deleteBtn.addEventListener("click", () => deleteCategory(cat.id));
+
+        actionCell.appendChild(editBtn);
+        actionCell.appendChild(deleteBtn);
+
+        row.appendChild(nameCell);
+        row.appendChild(typeCell);
+        row.appendChild(actionCell);
+
+        categoryListTbody.appendChild(row);
+    });
+}
+
+function enterCategoryEditMode(cat) {
+    editingCategoryId = cat.id;
+    categoryNameInput.value = cat.name;
+    categoryTypeInput.value = cat.type;
+    categorySubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Update Category';
+    categoryCancelBtn.hidden = false;
+    categoryFormTitle.textContent = "Edit Category";
+}
+
+function exitCategoryEditMode() {
+    editingCategoryId = null;
+    categoryForm.reset();
+    categorySubmitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Save Category';
+    categoryCancelBtn.hidden = true;
+    categoryFormTitle.textContent = "Add Category";
+}
+
+async function deleteCategory(id) {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+    const response = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        alert(error.detail || "Failed to delete category.");
+        return;
+    }
+    await loadCategories();
 }
 
 async function createTransaction(payload) {
@@ -452,6 +558,53 @@ if (searchBtn) {
     searchBtn.addEventListener("click", renderTable);
 }
 
+// Category form listeners
+if (categoryForm) {
+    categoryForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const name = categoryNameInput.value.trim();
+        const type = categoryTypeInput.value;
+        if (!name) return;
+
+        const payload = { name, type };
+        try {
+            if (editingCategoryId) {
+                // Update
+                const response = await fetch(`/api/categories/${editingCategoryId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || "Failed to update category.");
+                }
+            } else {
+                // Create
+                const response = await fetch("/api/categories", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || "Failed to create category.");
+                }
+            }
+            exitCategoryEditMode();
+            await loadCategories();
+            renderTable();
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    });
+}
+
+if (categoryCancelBtn) {
+    categoryCancelBtn.addEventListener("click", exitCategoryEditMode);
+}
+
 resetAmountInput();
 populateCategoryOptions(typeInput.value);
 
@@ -502,6 +655,58 @@ incomeChart = new Chart(incomeChartCanvas, {
     },
     options: chartOptions
 });
+
+if (trendChartCanvas) {
+    trendChart = new Chart(trendChartCanvas, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "Thu nhập (Income)",
+                    data: [],
+                    borderColor: "#6fc79a",
+                    backgroundColor: "rgba(111, 199, 154, 0.1)",
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: "Chi tiêu (Expense)",
+                    data: [],
+                    borderColor: "#ea6a8c",
+                    backgroundColor: "rgba(234, 106, 140, 0.1)",
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "top",
+                    labels: {
+                        color: "#6e3a50",
+                        font: { size: 13, weight: "bold" }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: "#9a6b80" }
+                },
+                y: {
+                    grid: { color: "rgba(216, 92, 133, 0.1)" },
+                    ticks: { color: "#9a6b80" }
+                }
+            }
+        }
+    });
+}
 
 loadTransactions().catch(error => {
     console.error(error);

@@ -255,6 +255,11 @@
 
         <section class="chart-section">
 
+            <h2><i class="fa-solid fa-chart-line"></i> Spending Trend Over Time</h2>
+            <div class="chart-panel trend-chart-panel" style="height: 350px; margin-bottom: 30px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+
             <h2><i class="fa-solid fa-chart-pie"></i> Spending Stats</h2>
 
             <div class="chart-grid">
@@ -271,9 +276,57 @@
 
         </section>
 
+        <!-- Category Management Section -->
+        <section class="category-section">
+            <h2><i class="fa-solid fa-tags"></i> Manage Categories</h2>
+            <div class="category-grid">
+                <div class="category-form-panel">
+                    <h3 id="category-form-title">Add Category</h3>
+                    <form id="category-form">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="category-name" placeholder="e.g. Electric bill" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="category-type">
+                                <option value="expense">💸 Expense</option>
+                                <option value="income">💵 Income</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" id="category-submit-btn">
+                                <i class="fa-solid fa-plus"></i> Save Category
+                            </button>
+                            <button type="button" id="category-cancel-btn" class="cancel-btn" hidden>
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="category-list-panel">
+                    <h3>Current Categories</h3>
+                    <div class="category-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="category-list">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <script src="/static/script.js?v=1.1"></script>
+    <script src="/static/script.js?v=1.2"></script>
 
 </body>
 

@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
-from models import Base, Expense, get_vietnam_time
+from models import Base, Expense, Category, get_vietnam_time
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -21,6 +21,40 @@ app = FastAPI()
 
 reset_expenses_table_if_needed()
 Base.metadata.create_all(bind=engine)
+
+# Seed default categories if empty
+def seed_default_categories():
+    db = Session(bind=engine)
+    try:
+        if db.query(Category).count() == 0:
+            default_categories = [
+                # Income categories
+                {"name": "Lương Ameno", "type": "income"},
+                {"name": "Lương Winggo", "type": "income"},
+                {"name": "Chi phí phát sinh", "type": "income"},
+                {"name": "Other", "type": "income"},
+                # Expense categories
+                {"name": "Đổ xăng", "type": "expense"},
+                {"name": "Ăn ngoài", "type": "expense"},
+                {"name": "Đi chợ", "type": "expense"},
+                {"name": "Chi phí phát sinh", "type": "expense"},
+                {"name": "Gửi xe", "type": "expense"},
+                {"name": "Đi chơi", "type": "expense"},
+                {"name": "Trả nợ", "type": "expense"},
+                {"name": "Quỹ Ameno", "type": "expense"},
+                {"name": "Shopping online", "type": "expense"},
+                {"name": "Other", "type": "expense"},
+            ]
+            for cat in default_categories:
+                db.add(Category(name=cat["name"], type=cat["type"]))
+            db.commit()
+    except Exception as e:
+        print("Error seeding categories:", e)
+        db.rollback()
+    finally:
+        db.close()
+
+seed_default_categories()
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
@@ -204,4 +238,70 @@ def delete_transaction(expense_id: int, db: Session = Depends(get_db)):
     db.delete(expense)
     db.commit()
 
+    return {"ok": True}
+
+
+@app.get("/api/categories")
+def list_categories(db: Session = Depends(get_db)):
+    categories = db.query(Category).all()
+    return [{"id": cat.id, "name": cat.name, "type": cat.type} for cat in categories]
+
+
+@app.post("/api/categories")
+def create_category(payload: dict, db: Session = Depends(get_db)):
+    name = str(payload.get("name", "")).strip()
+    cat_type = str(payload.get("type", "")).strip().lower()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name is required.")
+    if cat_type not in {"income", "expense"}:
+        raise HTTPException(status_code=400, detail="Category type must be income or expense.")
+
+    # Check if category already exists
+    existing = db.query(Category).filter(Category.name == name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Category already exists.")
+
+    new_cat = Category(name=name, type=cat_type)
+    db.add(new_cat)
+    db.commit()
+    db.refresh(new_cat)
+    return {"id": new_cat.id, "name": new_cat.name, "type": new_cat.type}
+
+
+@app.put("/api/categories/{category_id}")
+def update_category(category_id: int, payload: dict, db: Session = Depends(get_db)):
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found.")
+
+    name = str(payload.get("name", "")).strip()
+    cat_type = str(payload.get("type", "")).strip().lower()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name is required.")
+    if cat_type not in {"income", "expense"}:
+        raise HTTPException(status_code=400, detail="Category type must be income or expense.")
+
+    # Check unique constraint if name changed
+    if name != cat.name:
+        existing = db.query(Category).filter(Category.name == name).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Category name already exists.")
+
+    cat.name = name
+    cat.type = cat_type
+    db.commit()
+    db.refresh(cat)
+    return {"id": cat.id, "name": cat.name, "type": cat.type}
+
+
+@app.delete("/api/categories/{category_id}")
+def delete_category(category_id: int, db: Session = Depends(get_db)):
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found.")
+
+    db.delete(cat)
+    db.commit()
     return {"ok": True}
