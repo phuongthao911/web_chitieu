@@ -19,422 +19,414 @@
 
 <body>
 
-    <div class="container">
-
-        <header>
-            <div class="header-titles">
-                <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
-                <p>Personal spending management</p>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-wallet"></i>
+                <h2>Chi Tiêu App</h2>
             </div>
-            <div class="backup-container">
-                <button type="button" id="backup-btn" class="backup-btn">
-                    <i class="fa-solid fa-download"></i> Sao lưu dữ liệu
+            <nav class="sidebar-menu">
+                <button type="button" class="menu-item active" data-tab="tab-dashboard">
+                    <i class="fa-solid fa-house"></i> Tổng quan
                 </button>
-                <div class="backup-dropdown" id="backup-dropdown">
-                    <a href="/api/backup/json" download><i class="fa-solid fa-file-code"></i> Tải file JSON</a>
-                    <a href="/api/backup/csv" download><i class="fa-solid fa-file-csv"></i> Tải file CSV</a>
-                </div>
+                <button type="button" class="menu-item" data-tab="tab-categories">
+                    <i class="fa-solid fa-tags"></i> Danh mục
+                </button>
+                <button type="button" class="menu-item" data-tab="tab-budgets">
+                    <i class="fa-solid fa-chart-pie"></i> Ngân sách
+                </button>
+                <button type="button" class="menu-item" data-tab="tab-recurring">
+                    <i class="fa-solid fa-arrows-spin"></i> Định kỳ
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <p>v1.5 Premium</p>
             </div>
-        </header>
+        </aside>
 
-        <section class="summary">
-
-            <div class="card income">
-                <h3><i class="fa-solid fa-arrow-trend-up"></i> Total Income</h3>
-                <p id="total-income">0 VND</p>
-            </div>
-
-            <div class="card expense">
-                <h3><i class="fa-solid fa-arrow-trend-down"></i> Total Expense</h3>
-                <p id="total-expense">0 VND</p>
-            </div>
-
-            <div class="card balance">
-                <h3><i class="fa-solid fa-scale-balanced"></i> Balance</h3>
-                <p id="balance">0 VND</p>
-            </div>
-
-        </section>
-
-        <section class="wallet-summary">
-
-            <h2><i class="fa-solid fa-wallet"></i> Summary by Wallet</h2>
-
-            <div class="wallet-summary-grid">
-
-                <div class="wallet-card">
-                    <h3><i class="fa-solid fa-money-bill-wave"></i> Tiền mặt</h3>
-                    <div class="wallet-stats-row">
-                        <div class="wallet-mini-stat income">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> Total
-                                Income</span>
-                            <span class="wallet-mini-value" id="wallet-cash-income">0 VND</span>
-                        </div>
-                        <div class="wallet-mini-stat expense">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-down"></i> Total
-                                Expense</span>
-                            <span class="wallet-mini-value" id="wallet-cash-expense">0 VND</span>
-                        </div>
-                        <div class="wallet-mini-stat balance">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-scale-balanced"></i> Total
-                                Balance</span>
-                            <span class="wallet-mini-value" id="wallet-cash-balance">0 VND</span>
-                        </div>
-                    </div>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header>
+                <div class="header-titles">
+                    <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
+                    <p>Personal spending management</p>
                 </div>
-
-                <div class="wallet-card">
-                    <h3><i class="fa-solid fa-piggy-bank"></i> Tài khoản tiết kiệm</h3>
-                    <div class="wallet-stats-row">
-                        <div class="wallet-mini-stat income">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> Total
-                                Income</span>
-                            <span class="wallet-mini-value" id="wallet-savings-income">0 VND</span>
-                        </div>
-                        <div class="wallet-mini-stat expense">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-down"></i> Total
-                                Expense</span>
-                            <span class="wallet-mini-value" id="wallet-savings-expense">0 VND</span>
-                        </div>
-                        <div class="wallet-mini-stat balance">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-scale-balanced"></i> Total
-                                Balance</span>
-                            <span class="wallet-mini-value" id="wallet-savings-balance">0 VND</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="wallet-card">
-                    <h3><i class="fa-solid fa-building-columns"></i> Tài khoản ngân hàng</h3>
-                    <div class="wallet-stats-row">
-                        <div class="wallet-mini-stat income">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> Total
-                                Income</span>
-                            <span class="wallet-mini-value" id="wallet-bank-income">0 VND</span>
-                        </div>
-                        <div class="wallet-mini-stat expense">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-down"></i> Total
-                                Expense</span>
-                            <span class="wallet-mini-value" id="wallet-bank-expense">0 VND</span>
-                        </div>
-                        <div class="wallet-mini-stat balance">
-                            <span class="wallet-mini-label"><i class="fa-solid fa-scale-balanced"></i> Total
-                                Balance</span>
-                            <span class="wallet-mini-value" id="wallet-bank-balance">0 VND</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </section>
-
-        <section class="form-section">
-
-            <h2><i class="fa-solid fa-circle-plus"></i> Add Transaction</h2>
-
-            <form id="transaction-form">
-
-                <div class="form-group">
-                    <label><i class="fa-solid fa-right-left"></i> Type</label>
-                    <select id="type">
-                        <option value="expense">💸 Expense</option>
-                        <option value="income">💵 Income</option>
-                        <option value="transfer">🔄 Transfer (Chuyển ví)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fa-solid fa-money-bill-wave"></i> Amount</label>
-                    <div class="money-input">
-                        <input type="text" id="amount" placeholder="0" inputmode="numeric">
-                        <span>VND</span>
-                    </div>
-                </div>
-
-                <div class="form-group" id="category-group">
-                    <label><i class="fa-solid fa-tags"></i> Category</label>
-                    <select id="category">
-                        <option>Lương Ameno</option>
-                        <option>Lương Winggo</option>
-                        <option>Chi phí phát sinh</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fa-solid fa-wallet"></i> Wallet (Từ ví)</label>
-                    <select id="wallet">
-                        <option value="Tiền mặt">💵 Tiền mặt</option>
-                        <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
-                        <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="destination-wallet-group" style="display: none;">
-                    <label><i class="fa-solid fa-arrow-right-arrow-left"></i> Destination Wallet (Đến ví)</label>
-                    <select id="destination-wallet">
-                        <option value="Tiền mặt">💵 Tiền mặt</option>
-                        <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
-                        <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fa-solid fa-pen"></i> Note</label>
-                    <input type="text" id="note" placeholder="Example: Milk tea">
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" id="submit-btn">
-                        <i class="fa-solid fa-plus"></i>
-                        <span id="submit-btn-label">Add Transaction</span>
+                <div class="backup-container">
+                    <button type="button" id="backup-btn" class="backup-btn">
+                        <i class="fa-solid fa-download"></i> Sao lưu dữ liệu
                     </button>
-
-                    <button type="button" id="cancel-edit-btn" class="cancel-btn" hidden>
-                        <i class="fa-solid fa-xmark"></i>
-                        Cancel
-                    </button>
-                </div>
-
-            </form>
-
-        </section>
-
-        <section class="table-section">
-
-            <h2><i class="fa-solid fa-receipt"></i> Transaction History</h2>
-
-            <div class="history-filters">
-                <div class="form-group">
-                    <label><i class="fa-solid fa-filter"></i> Type</label>
-                    <select id="history-type-filter">
-                        <option value="all">All</option>
-                        <option value="Income">Income</option>
-                        <option value="Expense">Expense</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fa-solid fa-calendar-days"></i> Month</label>
-                    <input type="month" id="history-month-filter">
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fa-solid fa-wallet"></i> Wallet</label>
-                    <select id="history-wallet-filter">
-                        <option value="all">All</option>
-                        <option value="Tiền mặt">Tiền mặt</option>
-                        <option value="Tài khoản tiết kiệm">Tài khoản tiết kiệm</option>
-                        <option value="TK ngân hàng">Tài khoản ngân hàng</option>
-                    </select>
-                </div>
-
-                <div class="form-group search-group">
-                    <label><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</label>
-                    <div class="search-input-wrapper">
-                        <input type="text" id="history-search" placeholder="Nhập ghi chú hoặc số tiền...">
-                        <button type="button" id="search-btn" class="search-btn">
-                            <i class="fa-solid fa-magnifying-glass" style="margin-right: 0;"></i>
-                        </button>
+                    <div class="backup-dropdown" id="backup-dropdown">
+                        <a href="/api/backup/json" download><i class="fa-solid fa-file-code"></i> Tải file JSON</a>
+                        <a href="/api/backup/csv" download><i class="fa-solid fa-file-csv"></i> Tải file CSV</a>
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <table>
+            <!-- TAB: Dashboard (Overview) -->
+            <div id="tab-dashboard" class="tab-pane active">
+                <section class="summary">
+                    <div class="card income">
+                        <h3><i class="fa-solid fa-arrow-trend-up"></i> Total Income</h3>
+                        <p id="total-income">0 VND</p>
+                    </div>
 
-                <thead>
-                    <tr>
-                        <th><i class="fa-solid fa-right-left"></i> Type</th>
-                        <th><i class="fa-solid fa-tags"></i> Category</th>
-                        <th><i class="fa-solid fa-wallet"></i> Wallet</th>
-                        <th><i class="fa-solid fa-coins"></i> Amount</th>
-                        <th><i class="fa-solid fa-calendar-days"></i> Date</th>
-                        <th><i class="fa-solid fa-note-sticky"></i> Note</th>
-                        <th></th>
-                    </tr>
-                </thead>
+                    <div class="card expense">
+                        <h3><i class="fa-solid fa-arrow-trend-down"></i> Total Expense</h3>
+                        <p id="total-expense">0 VND</p>
+                    </div>
 
-                <tbody id="transaction-list">
-                    <!-- Rendered by JavaScript -->
-                </tbody>
+                    <div class="card balance">
+                        <h3><i class="fa-solid fa-scale-balanced"></i> Balance</h3>
+                        <p id="balance">0 VND</p>
+                    </div>
+                </section>
 
-            </table>
-
-        </section>
-
-        <section class="chart-section">
-
-            <h2><i class="fa-solid fa-chart-line"></i> Spending Trend Over Time</h2>
-            <div class="chart-panel trend-chart-panel" style="height: 350px; margin-bottom: 30px;">
-                <canvas id="trendChart"></canvas>
-            </div>
-
-            <h2><i class="fa-solid fa-chart-pie"></i> Spending Stats</h2>
-
-            <div class="chart-grid">
-                <div class="chart-panel">
-                    <h3><i class="fa-solid fa-sack-dollar"></i> Income</h3>
-                    <canvas id="incomeChart"></canvas>
-                </div>
-
-                <div class="chart-panel">
-                    <h3><i class="fa-solid fa-credit-card"></i> Expense</h3>
-                    <canvas id="expenseChart"></canvas>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Budget Section -->
-        <section class="budget-section">
-            <h2><i class="fa-solid fa-clock-rotate-left"></i> Quản lý Ngân sách (Budgets)</h2>
-            <div class="budget-header-controls">
-                <div class="form-group">
-                    <label>Tháng ngân sách</label>
-                    <input type="month" id="budget-month-filter">
-                </div>
-            </div>
-            
-            <div class="budget-grid-list" id="budget-items-container">
-                <!-- Rendered dynamically by JavaScript -->
-            </div>
-        </section>
-
-        <!-- Category Management Section -->
-        <section class="category-section">
-            <h2><i class="fa-solid fa-tags"></i> Manage Categories</h2>
-            <div class="category-grid">
-                <div class="category-form-panel">
-                    <h3 id="category-form-title">Add Category</h3>
-                    <form id="category-form">
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text" id="category-name" placeholder="e.g. Electric bill" required>
+                <section class="wallet-summary">
+                    <h2><i class="fa-solid fa-wallet"></i> Summary by Wallet</h2>
+                    <div class="wallet-summary-grid">
+                        <div class="wallet-card">
+                            <h3><i class="fa-solid fa-money-bill-wave"></i> Tiền mặt</h3>
+                            <div class="wallet-stats-row">
+                                <div class="wallet-mini-stat income">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> Total Income</span>
+                                    <span class="wallet-mini-value" id="wallet-cash-income">0 VND</span>
+                                </div>
+                                <div class="wallet-mini-stat expense">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-down"></i> Total Expense</span>
+                                    <span class="wallet-mini-value" id="wallet-cash-expense">0 VND</span>
+                                </div>
+                                <div class="wallet-mini-stat balance">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-scale-balanced"></i> Total Balance</span>
+                                    <span class="wallet-mini-value" id="wallet-cash-balance">0 VND</span>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="wallet-card">
+                            <h3><i class="fa-solid fa-piggy-bank"></i> Tài khoản tiết kiệm</h3>
+                            <div class="wallet-stats-row">
+                                <div class="wallet-mini-stat income">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> Total Income</span>
+                                    <span class="wallet-mini-value" id="wallet-savings-income">0 VND</span>
+                                </div>
+                                <div class="wallet-mini-stat expense">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-down"></i> Total Expense</span>
+                                    <span class="wallet-mini-value" id="wallet-savings-expense">0 VND</span>
+                                </div>
+                                <div class="wallet-mini-stat balance">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-scale-balanced"></i> Total Balance</span>
+                                    <span class="wallet-mini-value" id="wallet-savings-balance">0 VND</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wallet-card">
+                            <h3><i class="fa-solid fa-building-columns"></i> Tài khoản ngân hàng</h3>
+                            <div class="wallet-stats-row">
+                                <div class="wallet-mini-stat income">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-up"></i> Total Income</span>
+                                    <span class="wallet-mini-value" id="wallet-bank-income">0 VND</span>
+                                </div>
+                                <div class="wallet-mini-stat expense">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-arrow-trend-down"></i> Total Expense</span>
+                                    <span class="wallet-mini-value" id="wallet-bank-expense">0 VND</span>
+                                </div>
+                                <div class="wallet-mini-stat balance">
+                                    <span class="wallet-mini-label"><i class="fa-solid fa-scale-balanced"></i> Total Balance</span>
+                                    <span class="wallet-mini-value" id="wallet-bank-balance">0 VND</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <h2><i class="fa-solid fa-circle-plus"></i> Add Transaction</h2>
+                    <form id="transaction-form">
                         <div class="form-group">
-                            <label>Type</label>
-                            <select id="category-type">
+                            <label><i class="fa-solid fa-right-left"></i> Type</label>
+                            <select id="type">
                                 <option value="expense">💸 Expense</option>
                                 <option value="income">💵 Income</option>
-                            </select>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" id="category-submit-btn">
-                                <i class="fa-solid fa-plus"></i> Save Category
-                            </button>
-                            <button type="button" id="category-cancel-btn" class="cancel-btn" hidden>
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="category-list-panel">
-                    <h3>Current Categories</h3>
-                    <div class="category-table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="category-list">
-                                <!-- Rendered dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Recurring Transactions Section -->
-        <section class="recurring-section">
-            <h2><i class="fa-solid fa-arrows-spin"></i> Giao dịch định kỳ (Recurring)</h2>
-            <div class="recurring-grid">
-                <div class="recurring-form-panel">
-                    <h3>Thêm Giao dịch định kỳ</h3>
-                    <form id="recurring-form">
-                        <div class="form-group">
-                            <label>Loại giao dịch</label>
-                            <select id="recurring-type">
-                                <option value="Expense">💸 Expense (Chi tiêu)</option>
-                                <option value="Income">💵 Income (Thu nhập)</option>
-                                <option value="Transfer">🔄 Transfer (Chuyển ví)</option>
+                                <option value="transfer">🔄 Transfer (Chuyển ví)</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Số tiền</label>
+                            <label><i class="fa-solid fa-money-bill-wave"></i> Amount</label>
                             <div class="money-input">
-                                <input type="text" id="recurring-amount" placeholder="0" inputmode="numeric" required>
+                                <input type="text" id="amount" placeholder="0" inputmode="numeric">
                                 <span>VND</span>
                             </div>
                         </div>
-                        <div class="form-group" id="rec-category-group">
-                            <label>Danh mục</label>
-                            <select id="recurring-category">
-                                <!-- Loaded dynamically -->
+                        <div class="form-group" id="category-group">
+                            <label><i class="fa-solid fa-tags"></i> Category</label>
+                            <select id="category">
+                                <option>Lương Ameno</option>
+                                <option>Lương Winggo</option>
+                                <option>Chi phí phát sinh</option>
+                                <option>Other</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Từ ví (Ví nguồn)</label>
-                            <select id="recurring-wallet">
+                            <label><i class="fa-solid fa-wallet"></i> Wallet (Từ ví)</label>
+                            <select id="wallet">
                                 <option value="Tiền mặt">💵 Tiền mặt</option>
                                 <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
                                 <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
                             </select>
                         </div>
-                        <div class="form-group" id="rec-destination-wallet-group" style="display: none;">
-                            <label>Đến ví (Ví nhận)</label>
-                            <select id="recurring-destination-wallet">
+                        <div class="form-group" id="destination-wallet-group" style="display: none;">
+                            <label><i class="fa-solid fa-arrow-right-arrow-left"></i> Destination Wallet (Đến ví)</label>
+                            <select id="destination-wallet">
                                 <option value="Tiền mặt">💵 Tiền mặt</option>
                                 <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
                                 <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Ngày tự động tạo hàng tháng (1-31)</label>
-                            <input type="number" id="recurring-day" min="1" max="31" value="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Ghi chú</label>
-                            <input type="text" id="recurring-note" placeholder="Ví dụ: Tiền nhà tháng này">
+                            <label><i class="fa-solid fa-pen"></i> Note</label>
+                            <input type="text" id="note" placeholder="Example: Milk tea">
                         </div>
                         <div class="form-actions">
-                            <button type="submit">
-                                <i class="fa-solid fa-plus"></i> Thiết lập định kỳ
+                            <button type="submit" id="submit-btn">
+                                <i class="fa-solid fa-plus"></i>
+                                <span id="submit-btn-label">Add Transaction</span>
+                            </button>
+                            <button type="button" id="cancel-edit-btn" class="cancel-btn" hidden>
+                                <i class="fa-solid fa-xmark"></i> Cancel
                             </button>
                         </div>
                     </form>
-                </div>
-                <div class="recurring-list-panel">
-                    <h3>Cấu hình hiện có</h3>
-                    <div class="recurring-table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Loại</th>
-                                    <th>Số tiền</th>
-                                    <th>Danh mục/Ghi chú</th>
-                                    <th>Ví</th>
-                                    <th>Ngày</th>
-                                    <th>Đã chạy</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="recurring-list">
-                                <!-- Rendered dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
+                </section>
 
+                <section class="table-section">
+                    <h2><i class="fa-solid fa-receipt"></i> Transaction History</h2>
+                    <div class="history-filters">
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-filter"></i> Type</label>
+                            <select id="history-type-filter">
+                                <option value="all">All</option>
+                                <option value="Income">Income</option>
+                                <option value="Expense">Expense</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-calendar-days"></i> Month</label>
+                            <input type="month" id="history-month-filter">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fa-solid fa-wallet"></i> Wallet</label>
+                            <select id="history-wallet-filter">
+                                <option value="all">All</option>
+                                <option value="Tiền mặt">Tiền mặt</option>
+                                <option value="Tài khoản tiết kiệm">Tài khoản tiết kiệm</option>
+                                <option value="TK ngân hàng">Tài khoản ngân hàng</option>
+                            </select>
+                        </div>
+                        <div class="form-group search-group">
+                            <label><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</label>
+                            <div class="search-input-wrapper">
+                                <input type="text" id="history-search" placeholder="Nhập ghi chú hoặc số tiền...">
+                                <button type="button" id="search-btn" class="search-btn">
+                                    <i class="fa-solid fa-magnifying-glass" style="margin-right: 0;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><i class="fa-solid fa-right-left"></i> Type</th>
+                                <th><i class="fa-solid fa-tags"></i> Category</th>
+                                <th><i class="fa-solid fa-wallet"></i> Wallet</th>
+                                <th><i class="fa-solid fa-coins"></i> Amount</th>
+                                <th><i class="fa-solid fa-calendar-days"></i> Date</th>
+                                <th><i class="fa-solid fa-note-sticky"></i> Note</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list">
+                            <!-- Rendered by JavaScript -->
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="chart-section">
+                    <h2><i class="fa-solid fa-chart-line"></i> Spending Trend Over Time</h2>
+                    <div class="chart-panel trend-chart-panel" style="height: 350px; margin-bottom: 30px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <h2><i class="fa-solid fa-chart-pie"></i> Spending Stats</h2>
+                    <div class="chart-grid">
+                        <div class="chart-panel">
+                            <h3><i class="fa-solid fa-sack-dollar"></i> Income</h3>
+                            <canvas id="incomeChart"></canvas>
+                        </div>
+                        <div class="chart-panel">
+                            <h3><i class="fa-solid fa-credit-card"></i> Expense</h3>
+                            <canvas id="expenseChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        <!-- Budget Section -->
+            <!-- TAB: Categories -->
+            <div id="tab-categories" class="tab-pane">
+                <section class="category-section">
+                    <h2><i class="fa-solid fa-tags"></i> Manage Categories</h2>
+                    <div class="category-grid">
+                        <div class="category-form-panel">
+                            <h3 id="category-form-title">Add Category</h3>
+                            <form id="category-form">
+                                <div class="form-group">
+                                    <label>Name</label>
+                                    <input type="text" id="category-name" placeholder="e.g. Electric bill" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Type</label>
+                                    <select id="category-type">
+                                        <option value="expense">💸 Expense</option>
+                                        <option value="income">💵 Income</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" id="category-submit-btn">
+                                        <i class="fa-solid fa-plus"></i> Save Category
+                                    </button>
+                                    <button type="button" id="category-cancel-btn" class="cancel-btn" hidden>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="category-list-panel">
+                            <h3>Current Categories</h3>
+                            <div class="category-table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="category-list">
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB: Budgets -->
+            <div id="tab-budgets" class="tab-pane">
+                <section class="budget-section">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> Quản lý Ngân sách (Budgets)</h2>
+                    <div class="budget-header-controls">
+                        <div class="form-group">
+                            <label>Tháng ngân sách</label>
+                            <input type="month" id="budget-month-filter">
+                        </div>
+                    </div>
+                    
+                    <div class="budget-grid-list" id="budget-items-container">
+                        <!-- Rendered dynamically by JavaScript -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB: Recurring -->
+            <div id="tab-recurring" class="tab-pane">
+                <section class="recurring-section">
+                    <h2><i class="fa-solid fa-arrows-spin"></i> Giao dịch định kỳ (Recurring)</h2>
+                    <div class="recurring-grid">
+                        <div class="recurring-form-panel">
+                            <h3>Thêm Giao dịch định kỳ</h3>
+                            <form id="recurring-form">
+                                <div class="form-group">
+                                    <label>Loại giao dịch</label>
+                                    <select id="recurring-type">
+                                        <option value="Expense">💸 Expense (Chi tiêu)</option>
+                                        <option value="Income">💵 Income (Thu nhập)</option>
+                                        <option value="Transfer">🔄 Transfer (Chuyển ví)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Số tiền</label>
+                                    <div class="money-input">
+                                        <input type="text" id="recurring-amount" placeholder="0" inputmode="numeric" required>
+                                        <span>VND</span>
+                                    </div>
+                                </div>
+                                <div class="form-group" id="rec-category-group">
+                                    <label>Danh mục</label>
+                                    <select id="recurring-category">
+                                        <!-- Loaded dynamically -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Từ ví (Ví nguồn)</label>
+                                    <select id="recurring-wallet">
+                                        <option value="Tiền mặt">💵 Tiền mặt</option>
+                                        <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
+                                        <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="rec-destination-wallet-group" style="display: none;">
+                                    <label>Đến ví (Ví nhận)</label>
+                                    <select id="recurring-destination-wallet">
+                                        <option value="Tiền mặt">💵 Tiền mặt</option>
+                                        <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
+                                        <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ngày tự động tạo hàng tháng (1-31)</label>
+                                    <input type="number" id="recurring-day" min="1" max="31" value="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ghi chú</label>
+                                    <input type="text" id="recurring-note" placeholder="Ví dụ: Tiền nhà tháng này">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit">
+                                        <i class="fa-solid fa-plus"></i> Thiết lập định kỳ
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="recurring-list-panel">
+                            <h3>Cấu hình hiện có</h3>
+                            <div class="recurring-table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Loại</th>
+                                            <th>Số tiền</th>
+                                            <th>Danh mục/Ghi chú</th>
+                                            <th>Ví</th>
+                                            <th>Ngày</th>
+                                            <th>Đã chạy</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recurring-list">
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
     </div>
 
-    <script src="/static/script.js?v=1.4"></script>
+    <script src="/static/script.js?v=1.5"></script>
 
 </body>
 

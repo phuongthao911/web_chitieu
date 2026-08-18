@@ -1022,3 +1022,22 @@ if (backupBtn && backupDropdown) {
         }
     });
 }
+
+// Sidebar Tabs switching logic
+document.querySelectorAll(".sidebar-menu .menu-item").forEach(button => {
+    button.addEventListener("click", () => {
+        // Remove active class from all menu buttons
+        document.querySelectorAll(".sidebar-menu .menu-item").forEach(btn => btn.classList.remove("active"));
+        // Add active class to clicked button
+        button.classList.add("active");
+
+        // Hide all tab panes
+        document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
+        // Show corresponding tab pane
+        const targetTabId = button.getAttribute("data-tab");
+        const targetPane = document.getElementById(targetTabId);
+        if (targetPane) {
+            targetPane.classList.add("active");
+        }
+    });
+});
