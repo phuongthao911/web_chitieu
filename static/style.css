@@ -1084,3 +1084,39 @@ button i {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+   APP FOOTER
+========================= */
+.app-footer {
+    margin-top: 50px;
+    padding: 24px 0 10px;
+    text-align: center;
+    border-top: 1px solid #ffd9e6;
+}
+
+.app-footer p {
+    font-size: 14px;
+    color: var(--sakura-plum-soft);
+    letter-spacing: 0.5px;
+}
+
+.app-footer strong {
+    color: var(--sakura-deep);
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.footer-heart {
+    color: var(--sakura-rose);
+    margin: 0 4px;
+    display: inline-block;
+    animation: heartBeat 1.8s infinite ease-in-out;
+}
+
+@keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.25); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.15); }
+}
