@@ -46,6 +46,11 @@ class Expense(Base):
         default=""
     )
 
+    destination_wallet = Column(
+        String(50),
+        nullable=True
+    )
+
     created_at = Column(
         DateTime,
         default=get_vietnam_time,
@@ -96,4 +101,55 @@ class Budget(Base):
     month = Column(
         String(7),  # "YYYY-MM"
         nullable=False
+    )
+
+
+class RecurringTransaction(Base):
+    __tablename__ = "recurring_transactions"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    transaction_type = Column(
+        String(20),
+        nullable=False  # "Income", "Expense", "Transfer"
+    )
+
+    amount = Column(
+        Float,
+        nullable=False
+    )
+
+    category = Column(
+        String,
+        nullable=False
+    )
+
+    wallet = Column(
+        String(50),
+        nullable=False
+    )
+
+    destination_wallet = Column(
+        String(50),
+        nullable=True
+    )
+
+    note = Column(
+        String,
+        nullable=False,
+        default=""
+    )
+
+    day_of_month = Column(
+        Integer,
+        nullable=False
+    )
+
+    last_executed_month = Column(
+        String(7),  # "YYYY-MM"
+        nullable=True
     )

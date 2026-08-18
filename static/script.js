@@ -30,6 +30,22 @@ const WALLET_ID_MAP = {
 const submitBtn = document.getElementById("submit-btn");
 const submitBtnLabel = document.getElementById("submit-btn-label");
 const cancelEditBtn = document.getElementById("cancel-edit-btn");
+const destinationWalletInput = document.getElementById("destination-wallet");
+const destinationWalletGroup = document.getElementById("destination-wallet-group");
+const categoryGroup = document.getElementById("category-group");
+
+// Recurring UI selectors
+const recurringForm = document.getElementById("recurring-form");
+const recurringTypeSelect = document.getElementById("recurring-type");
+const recurringAmountInput = document.getElementById("recurring-amount");
+const recurringCategorySelect = document.getElementById("recurring-category");
+const recurringWalletSelect = document.getElementById("recurring-wallet");
+const recurringDestWalletSelect = document.getElementById("recurring-destination-wallet");
+const recurringDestWalletGroup = document.getElementById("rec-destination-wallet-group");
+const recurringCategoryGroup = document.getElementById("rec-category-group");
+const recurringDayInput = document.getElementById("recurring-day");
+const recurringNoteInput = document.getElementById("recurring-note");
+const recurringListTbody = document.getElementById("recurring-list");
 
 // Category UI selectors
 const categoryForm = document.getElementById("category-form");
@@ -136,7 +152,11 @@ function updateSummary() {
 
 function updateWalletSummary() {
     Object.entries(WALLET_ID_MAP).forEach(([walletName, idPrefix]) => {
+        // Transactions outgoing or related to this wallet
         const walletTransactions = transactions.filter(transaction => transaction.wallet === walletName);
+        
+        // Incoming transfers specifically to this wallet
+        const incomingTransfers = transactions.filter(transaction => transaction.type === "Transfer" && transaction.destination_wallet === walletName);
 
         const income = walletTransactions
             .filter(transaction => transaction.type === "Income")
@@ -146,13 +166,23 @@ function updateWalletSummary() {
             .filter(transaction => transaction.type === "Expense")
             .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
 
+        const outgoingTransfersSum = walletTransactions
+            .filter(transaction => transaction.type === "Transfer")
+            .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+        const incomingTransfersSum = incomingTransfers
+            .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+        // Balance = Income + Incoming Transfers - Expense - Outgoing Transfers
+        const balanceVal = income + incomingTransfersSum - expense - outgoingTransfersSum;
+
         const incomeEl = document.getElementById(`wallet-${idPrefix}-income`);
         const expenseEl = document.getElementById(`wallet-${idPrefix}-expense`);
         const walletBalanceEl = document.getElementById(`wallet-${idPrefix}-balance`);
 
         if (incomeEl) incomeEl.textContent = formatMoney(income);
         if (expenseEl) expenseEl.textContent = formatMoney(expense);
-        if (walletBalanceEl) walletBalanceEl.textContent = formatMoney(income - expense);
+        if (walletBalanceEl) walletBalanceEl.textContent = formatMoney(balanceVal);
     });
 }
 
@@ -272,13 +302,19 @@ function renderTable() {
         const row = document.createElement("tr");
 
         const typeCell = document.createElement("td");
-        typeCell.textContent = transaction.type;
+        typeCell.textContent = transaction.type === "Transfer" ? "Transfer 🔄" : transaction.type;
 
         const categoryCell = document.createElement("td");
         categoryCell.textContent = transaction.category;
 
         const walletCell = document.createElement("td");
-        walletCell.textContent = transaction.wallet === "TK ngân hàng" ? "Tài khoản ngân hàng" : transaction.wallet;
+        if (transaction.type === "Transfer") {
+            const fromWallet = transaction.wallet === "TK ngân hàng" ? "Tài khoản ngân hàng" : transaction.wallet;
+            const toWallet = transaction.destination_wallet === "TK ngân hàng" ? "Tài khoản ngân hàng" : transaction.destination_wallet;
+            walletCell.textContent = `${fromWallet} ➡️ ${toWallet}`;
+        } else {
+            walletCell.textContent = transaction.wallet === "TK ngân hàng" ? "Tài khoản ngân hàng" : transaction.wallet;
+        }
 
         const amountCell = document.createElement("td");
         amountCell.textContent = formatMoney(transaction.amount);
@@ -434,7 +470,20 @@ async function loadCategories() {
     }
     dbCategories = await response.json();
     populateCategoryOptions(typeInput.value);
+    populateRecurringCategoryOptions(recurringTypeSelect ? recurringTypeSelect.value.toLowerCase() : "expense");
     renderCategoryList();
+}
+
+function populateRecurringCategoryOptions(type) {
+    if (!recurringCategorySelect) return;
+    const options = dbCategories.filter(cat => cat.type === type);
+    recurringCategorySelect.innerHTML = "";
+    options.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat.name;
+        option.textContent = cat.name;
+        recurringCategorySelect.appendChild(option);
+    });
 }
 
 function renderCategoryList() {
@@ -541,7 +590,17 @@ function enterEditMode(transaction) {
 
     const type = transaction.type.toLowerCase();
     typeInput.value = type;
-    populateCategoryOptions(type, transaction.category);
+    
+    if (type === "transfer") {
+        if (categoryGroup) categoryGroup.style.display = "none";
+        if (destinationWalletGroup) destinationWalletGroup.style.display = "block";
+        if (destinationWalletInput) destinationWalletInput.value = transaction.destination_wallet || "";
+    } else {
+        if (categoryGroup) categoryGroup.style.display = "block";
+        if (destinationWalletGroup) destinationWalletGroup.style.display = "none";
+        populateCategoryOptions(type, transaction.category);
+    }
+    
     walletInput.value = transaction.wallet;
     noteInput.value = transaction.note === "-" ? "" : transaction.note;
     amountInput.value = formatAmountInput(String(transaction.amount / 1000));
@@ -557,6 +616,8 @@ function exitEditMode() {
     editingId = null;
     form.reset();
     resetAmountInput();
+    if (categoryGroup) categoryGroup.style.display = "block";
+    if (destinationWalletGroup) destinationWalletGroup.style.display = "none";
     populateCategoryOptions(typeInput.value);
 
     submitBtnLabel.textContent = "Add Transaction";
@@ -590,8 +651,9 @@ form.addEventListener("submit", async event => {
 
     const payload = {
         type: typeInput.value,
-        category: categoryInput.value,
+        category: typeInput.value === "transfer" ? "Chuyển ví" : categoryInput.value,
         wallet: walletInput.value,
+        destination_wallet: typeInput.value === "transfer" ? destinationWalletInput.value : null,
         amount,
         note: noteInput.value.trim()
     };
@@ -634,7 +696,15 @@ amountInput.addEventListener("input", () => {
 });
 
 typeInput.addEventListener("change", () => {
-    populateCategoryOptions(typeInput.value);
+    const type = typeInput.value;
+    if (type === "transfer") {
+        if (categoryGroup) categoryGroup.style.display = "none";
+        if (destinationWalletGroup) destinationWalletGroup.style.display = "block";
+    } else {
+        if (categoryGroup) categoryGroup.style.display = "block";
+        if (destinationWalletGroup) destinationWalletGroup.style.display = "none";
+        populateCategoryOptions(type);
+    }
 });
 
 historyTypeFilter.addEventListener("change", renderTable);
@@ -807,10 +877,134 @@ if (trendChartCanvas) {
     });
 }
 
-loadTransactions().catch(error => {
+loadTransactions().then(() => {
+    loadRecurring();
+}).catch(error => {
     console.error(error);
     alert(error.message);
 });
+
+async function loadRecurring() {
+    const response = await fetch("/api/recurring");
+    if (!response.ok) return;
+    const items = await response.json();
+    renderRecurringList(items);
+}
+
+function renderRecurringList(items) {
+    if (!recurringListTbody) return;
+    recurringListTbody.innerHTML = "";
+    items.forEach(r => {
+        const row = document.createElement("tr");
+
+        const typeCell = document.createElement("td");
+        typeCell.textContent = r.type;
+
+        const amountCell = document.createElement("td");
+        amountCell.textContent = formatMoney(r.amount);
+
+        const catNoteCell = document.createElement("td");
+        catNoteCell.textContent = `${r.category} | ${r.note}`;
+
+        const walletCell = document.createElement("td");
+        if (r.type === "Transfer") {
+            walletCell.textContent = `${r.wallet} ➡️ ${r.destination_wallet}`;
+        } else {
+            walletCell.textContent = r.wallet;
+        }
+
+        const dayCell = document.createElement("td");
+        dayCell.textContent = `Ngày ${r.day_of_month}`;
+
+        const runCell = document.createElement("td");
+        runCell.textContent = r.last_executed_month || "Chưa chạy";
+
+        const actionCell = document.createElement("td");
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "delete-btn";
+        deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        deleteBtn.addEventListener("click", async () => {
+            if (!confirm("Xóa cấu hình định kỳ này?")) return;
+            const res = await fetch(`/api/recurring/${r.id}`, { method: "DELETE" });
+            if (res.ok) {
+                loadRecurring();
+            }
+        });
+        actionCell.appendChild(deleteBtn);
+
+        row.appendChild(typeCell);
+        row.appendChild(amountCell);
+        row.appendChild(catNoteCell);
+        row.appendChild(walletCell);
+        row.appendChild(dayCell);
+        row.appendChild(runCell);
+        row.appendChild(actionCell);
+
+        recurringListTbody.appendChild(row);
+    });
+}
+
+// Bind recurring event listeners
+if (recurringTypeSelect) {
+    recurringTypeSelect.addEventListener("change", () => {
+        const type = recurringTypeSelect.value.toLowerCase();
+        if (type === "transfer") {
+            if (recurringCategoryGroup) recurringCategoryGroup.style.display = "none";
+            if (recurringDestWalletGroup) recurringDestWalletGroup.style.display = "block";
+        } else {
+            if (recurringCategoryGroup) recurringCategoryGroup.style.display = "block";
+            if (recurringDestWalletGroup) recurringDestWalletGroup.style.display = "none";
+            populateRecurringCategoryOptions(type);
+        }
+    });
+}
+
+if (recurringAmountInput) {
+    recurringAmountInput.addEventListener("input", () => {
+        recurringAmountInput.value = formatAmountInput(recurringAmountInput.value);
+    });
+}
+
+if (recurringForm) {
+    recurringForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const amount = parseAmount(recurringAmountInput.value);
+        if (!amount || isNaN(amount)) return;
+
+        const payload = {
+            type: recurringTypeSelect.value,
+            amount: amount,
+            category: recurringTypeSelect.value === "Transfer" ? "Chuyển ví" : recurringCategorySelect.value,
+            wallet: recurringWalletSelect.value,
+            destination_wallet: recurringTypeSelect.value === "Transfer" ? recurringDestWalletSelect.value : null,
+            day_of_month: parseInt(recurringDayInput.value),
+            note: recurringNoteInput.value.trim()
+        };
+
+        try {
+            const res = await fetch("/api/recurring", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || "Không thể thêm cấu hình");
+            }
+
+            recurringForm.reset();
+            if (recurringCategoryGroup) recurringCategoryGroup.style.display = "block";
+            if (recurringDestWalletGroup) recurringDestWalletGroup.style.display = "none";
+            populateRecurringCategoryOptions(recurringTypeSelect.value.toLowerCase());
+            await loadRecurring();
+            await loadTransactions();
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+}
 
 // Backup Dropdown Logic
 const backupBtn = document.getElementById("backup-btn");

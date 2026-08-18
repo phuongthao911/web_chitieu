@@ -53,48 +53,33 @@ def get_db():
 
 
 def reset_expenses_table_if_needed():
-    """Drops the `expenses` table if its schema is stale AND it's empty.
+    """Dynamically adds missing columns to `expenses` table on both SQLite and Postgres.
 
-    This is a lightweight dev convenience for SQLite only — it relies on
-    sqlite_master/PRAGMA, which don't exist on Postgres. On Postgres,
-    use a real migration tool (e.g. Alembic) instead, so this function
-    is a no-op there.
+    This ensures safe database migrations on Production (Supabase) without losing data.
     """
-    if not IS_SQLITE:
-        return
-
     with engine.begin() as connection:
-        table_exists = connection.execute(
-            text("SELECT name FROM sqlite_master WHERE type='table' AND name='expenses'")
-        ).fetchone()
-
-        if not table_exists:
-            return
-
-        columns = [row[1] for row in connection.execute(text("PRAGMA table_info(expenses)"))]
-        desired_columns = [
-            "id",
-            "transaction_type",
-            "amount",
-            "category",
-            "wallet",
-            "note",
-            "created_at",
-        ]
-
-        if columns != desired_columns:
-            # If table is empty, we can just drop it
-            row_count = connection.execute(text("SELECT COUNT(*) FROM expenses")).scalar_one()
-            if row_count == 0:
-                connection.execute(text("DROP TABLE expenses"))
-            else:
-                # Add any missing columns dynamically
-                for col in desired_columns:
-                    if col not in columns:
-                        if col == "wallet":
-                            connection.execute(text("ALTER TABLE expenses ADD COLUMN wallet VARCHAR(50) DEFAULT 'Tiền mặt'"))
-                        elif col == "note":
-                            connection.execute(text("ALTER TABLE expenses ADD COLUMN note VARCHAR DEFAULT ''"))
-                        elif col == "created_at":
-                            connection.execute(text("ALTER TABLE expenses ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
-                        # Add other columns if needed in the future
+        if IS_SQLITE:
+            table_exists = connection.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table' AND name='expenses'")
+            ).fetchone()
+            if not table_exists:
+                return
+            
+            # Fetch existing columns
+            columns = [row[1] for row in connection.execute(text("PRAGMA table_info(expenses)"))]
+            
+            # Dynamically add missing columns
+            if "destination_wallet" not in columns:
+                connection.execute(text("ALTER TABLE expenses ADD COLUMN destination_wallet VARCHAR(50) NULL"))
+        else:
+            # PostgreSQL migration
+            # We can use standard information_schema queries to inspect and add columns
+            column_exists = connection.execute(
+                text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_name='expenses' AND column_name='destination_wallet'"
+                )
+            ).fetchone()
+            
+            if not column_exists:
+                connection.execute(text("ALTER TABLE expenses ADD COLUMN destination_wallet VARCHAR(50) NULL"))

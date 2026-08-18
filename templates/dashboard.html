@@ -138,8 +138,9 @@
                 <div class="form-group">
                     <label><i class="fa-solid fa-right-left"></i> Type</label>
                     <select id="type">
-                        <option value="income">💵 Income</option>
                         <option value="expense">💸 Expense</option>
+                        <option value="income">💵 Income</option>
+                        <option value="transfer">🔄 Transfer (Chuyển ví)</option>
                     </select>
                 </div>
 
@@ -151,7 +152,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="category-group">
                     <label><i class="fa-solid fa-tags"></i> Category</label>
                     <select id="category">
                         <option>Lương Ameno</option>
@@ -162,8 +163,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label><i class="fa-solid fa-wallet"></i> Wallet</label>
+                    <label><i class="fa-solid fa-wallet"></i> Wallet (Từ ví)</label>
                     <select id="wallet">
+                        <option value="Tiền mặt">💵 Tiền mặt</option>
+                        <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
+                        <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="destination-wallet-group" style="display: none;">
+                    <label><i class="fa-solid fa-arrow-right-arrow-left"></i> Destination Wallet (Đến ví)</label>
+                    <select id="destination-wallet">
                         <option value="Tiền mặt">💵 Tiền mặt</option>
                         <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
                         <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
@@ -339,9 +349,92 @@
             </div>
         </section>
 
+        <!-- Recurring Transactions Section -->
+        <section class="recurring-section">
+            <h2><i class="fa-solid fa-arrows-spin"></i> Giao dịch định kỳ (Recurring)</h2>
+            <div class="recurring-grid">
+                <div class="recurring-form-panel">
+                    <h3>Thêm Giao dịch định kỳ</h3>
+                    <form id="recurring-form">
+                        <div class="form-group">
+                            <label>Loại giao dịch</label>
+                            <select id="recurring-type">
+                                <option value="Expense">💸 Expense (Chi tiêu)</option>
+                                <option value="Income">💵 Income (Thu nhập)</option>
+                                <option value="Transfer">🔄 Transfer (Chuyển ví)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Số tiền</label>
+                            <div class="money-input">
+                                <input type="text" id="recurring-amount" placeholder="0" inputmode="numeric" required>
+                                <span>VND</span>
+                            </div>
+                        </div>
+                        <div class="form-group" id="rec-category-group">
+                            <label>Danh mục</label>
+                            <select id="recurring-category">
+                                <!-- Loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Từ ví (Ví nguồn)</label>
+                            <select id="recurring-wallet">
+                                <option value="Tiền mặt">💵 Tiền mặt</option>
+                                <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
+                                <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="rec-destination-wallet-group" style="display: none;">
+                            <label>Đến ví (Ví nhận)</label>
+                            <select id="recurring-destination-wallet">
+                                <option value="Tiền mặt">💵 Tiền mặt</option>
+                                <option value="Tài khoản tiết kiệm">🏦 Tài khoản tiết kiệm</option>
+                                <option value="TK ngân hàng">💳 Tài khoản ngân hàng</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày tự động tạo hàng tháng (1-31)</label>
+                            <input type="number" id="recurring-day" min="1" max="31" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ghi chú</label>
+                            <input type="text" id="recurring-note" placeholder="Ví dụ: Tiền nhà tháng này">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit">
+                                <i class="fa-solid fa-plus"></i> Thiết lập định kỳ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="recurring-list-panel">
+                    <h3>Cấu hình hiện có</h3>
+                    <div class="recurring-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Loại</th>
+                                    <th>Số tiền</th>
+                                    <th>Danh mục/Ghi chú</th>
+                                    <th>Ví</th>
+                                    <th>Ngày</th>
+                                    <th>Đã chạy</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="recurring-list">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <script src="/static/script.js?v=1.3"></script>
+    <script src="/static/script.js?v=1.4"></script>
 
 </body>
 

@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
-from models import Base, Expense, Category, Budget, get_vietnam_time
+from models import Base, Expense, Category, Budget, RecurringTransaction, get_vietnam_time
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -66,6 +66,7 @@ def serialize_expense(expense: Expense) -> dict:
         "type": expense.transaction_type,
         "category": expense.category,
         "wallet": expense.wallet,
+        "destination_wallet": expense.destination_wallet,
         "amount": expense.amount,
         "note": expense.note,
         "created_at": expense.created_at.strftime("%Y-%m-%d %H:%M") if expense.created_at else None,
@@ -152,6 +153,7 @@ def create_transaction(payload: dict, db: Session = Depends(get_db)):
     transaction_type = str(payload.get("type", "")).strip().lower()
     category = str(payload.get("category", "")).strip()
     wallet = str(payload.get("wallet", "")).strip()
+    destination_wallet = str(payload.get("destination_wallet", "")).strip() if payload.get("destination_wallet") else None
     note = str(payload.get("note", "")).strip()
 
     try:
@@ -159,11 +161,18 @@ def create_transaction(payload: dict, db: Session = Depends(get_db)):
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Amount must be a number.")
 
-    if transaction_type not in {"income", "expense"}:
-        raise HTTPException(status_code=400, detail="Type must be income or expense.")
+    if transaction_type not in {"income", "expense", "transfer"}:
+        raise HTTPException(status_code=400, detail="Type must be income, expense, or transfer.")
 
-    if not category:
-        raise HTTPException(status_code=400, detail="Category is required.")
+    if transaction_type == "transfer":
+        category = "Chuyển ví"
+        if not destination_wallet or destination_wallet not in ALLOWED_WALLETS:
+            raise HTTPException(status_code=400, detail="Destination wallet is required and must be valid for transfer.")
+        if wallet == destination_wallet:
+            raise HTTPException(status_code=400, detail="Source and destination wallets cannot be the same.")
+    else:
+        if not category:
+            raise HTTPException(status_code=400, detail="Category is required.")
 
     if wallet not in ALLOWED_WALLETS:
         raise HTTPException(status_code=400, detail="Wallet is required.")
@@ -172,9 +181,10 @@ def create_transaction(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
 
     expense = Expense(
-        transaction_type="Income" if transaction_type == "income" else "Expense",
+        transaction_type="Income" if transaction_type == "income" else ("Expense" if transaction_type == "expense" else "Transfer"),
         category=category,
         wallet=wallet,
+        destination_wallet=destination_wallet if transaction_type == "transfer" else None,
         amount=amount,
         note=note or "-",
         created_at=get_vietnam_time(),
@@ -197,6 +207,7 @@ def update_transaction(expense_id: int, payload: dict, db: Session = Depends(get
     transaction_type = str(payload.get("type", "")).strip().lower()
     category = str(payload.get("category", "")).strip()
     wallet = str(payload.get("wallet", "")).strip()
+    destination_wallet = str(payload.get("destination_wallet", "")).strip() if payload.get("destination_wallet") else None
     note = str(payload.get("note", "")).strip()
 
     try:
@@ -204,11 +215,18 @@ def update_transaction(expense_id: int, payload: dict, db: Session = Depends(get
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Amount must be a number.")
 
-    if transaction_type not in {"income", "expense"}:
-        raise HTTPException(status_code=400, detail="Type must be income or expense.")
+    if transaction_type not in {"income", "expense", "transfer"}:
+        raise HTTPException(status_code=400, detail="Type must be income, expense, or transfer.")
 
-    if not category:
-        raise HTTPException(status_code=400, detail="Category is required.")
+    if transaction_type == "transfer":
+        category = "Chuyển ví"
+        if not destination_wallet or destination_wallet not in ALLOWED_WALLETS:
+            raise HTTPException(status_code=400, detail="Destination wallet is required and must be valid for transfer.")
+        if wallet == destination_wallet:
+            raise HTTPException(status_code=400, detail="Source and destination wallets cannot be the same.")
+    else:
+        if not category:
+            raise HTTPException(status_code=400, detail="Category is required.")
 
     if wallet not in ALLOWED_WALLETS:
         raise HTTPException(status_code=400, detail="Wallet is required.")
@@ -216,9 +234,10 @@ def update_transaction(expense_id: int, payload: dict, db: Session = Depends(get
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
 
-    expense.transaction_type = "Income" if transaction_type == "income" else "Expense"
+    expense.transaction_type = "Income" if transaction_type == "income" else ("Expense" if transaction_type == "expense" else "Transfer")
     expense.category = category
     expense.wallet = wallet
+    expense.destination_wallet = destination_wallet if transaction_type == "transfer" else None
     expense.amount = amount
     expense.note = note or "-"
 
@@ -377,3 +396,137 @@ def save_budget(payload: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(b)
     return {"category_name": b.category_name, "month": b.month, "amount_limit": b.amount_limit}
+
+
+@app.get("/api/recurring")
+def list_recurring(db: Session = Depends(get_db)):
+    items = db.query(RecurringTransaction).all()
+    return [
+        {
+            "id": r.id,
+            "type": r.transaction_type,
+            "amount": r.amount,
+            "category": r.category,
+            "wallet": r.wallet,
+            "destination_wallet": r.destination_wallet,
+            "note": r.note,
+            "day_of_month": r.day_of_month,
+            "last_executed_month": r.last_executed_month
+        }
+        for r in items
+    ]
+
+
+@app.post("/api/recurring")
+def create_recurring(payload: dict, db: Session = Depends(get_db)):
+    t_type = str(payload.get("type", "")).strip()
+    try:
+        amount = float(payload.get("amount"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Amount must be a number.")
+    
+    category = str(payload.get("category", "")).strip()
+    wallet = str(payload.get("wallet", "")).strip()
+    destination_wallet = str(payload.get("destination_wallet", "")).strip() if payload.get("destination_wallet") else None
+    note = str(payload.get("note", "")).strip()
+    try:
+        day_of_month = int(payload.get("day_of_month"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Day of month must be a number (1-31).")
+
+    if t_type not in {"Income", "Expense", "Transfer"}:
+        raise HTTPException(status_code=400, detail="Type must be Income, Expense, or Transfer.")
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+    if t_type != "Transfer" and not category:
+        raise HTTPException(status_code=400, detail="Category is required.")
+    if wallet not in ALLOWED_WALLETS:
+        raise HTTPException(status_code=400, detail="Wallet is invalid.")
+    if t_type == "Transfer":
+        category = "Chuyển ví"
+        if not destination_wallet or destination_wallet not in ALLOWED_WALLETS:
+            raise HTTPException(status_code=400, detail="Destination wallet is required and must be valid.")
+        if wallet == destination_wallet:
+            raise HTTPException(status_code=400, detail="Source and destination wallets must differ.")
+    if day_of_month < 1 or day_of_month > 31:
+        raise HTTPException(status_code=400, detail="Day of month must be between 1 and 31.")
+
+    rec = RecurringTransaction(
+        transaction_type=t_type,
+        amount=amount,
+        category=category,
+        wallet=wallet,
+        destination_wallet=destination_wallet if t_type == "Transfer" else None,
+        note=note or "-",
+        day_of_month=day_of_month,
+        last_executed_month=None
+    )
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+    
+    # Run dynamic checker immediately to catch up if created on/after execution day in current month
+    run_recurring_scheduler_on_db(db)
+    
+    return {"id": rec.id, "type": rec.transaction_type, "amount": rec.amount}
+
+
+@app.delete("/api/recurring/{recurring_id}")
+def delete_recurring(recurring_id: int, db: Session = Depends(get_db)):
+    rec = db.query(RecurringTransaction).filter(RecurringTransaction.id == recurring_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recurring transaction config not found.")
+    db.delete(rec)
+    db.commit()
+    return {"ok": True}
+
+
+def run_recurring_scheduler_on_db(db: Session):
+    """Safely processes and executes recurring transactions.
+    
+    Idempotency: Compares last_executed_month to ensure only 1 run per month.
+    """
+    now_vn = get_vietnam_time()
+    current_month_str = now_vn.strftime("%Y-%m")
+    current_day = now_vn.day
+
+    configs = db.query(RecurringTransaction).all()
+    for rec in configs:
+        # Check if executed this month already
+        if rec.last_executed_month == current_month_str:
+            continue
+        
+        # Check if the day of execution has arrived or passed in the current month
+        if current_day >= rec.day_of_month:
+            # Execute transaction!
+            try:
+                # We construct the timestamp representing scheduled run date in current month
+                execution_time = now_vn.replace(day=rec.day_of_month, hour=9, minute=0, second=0, microsecond=0)
+                
+                exp = Expense(
+                    transaction_type=rec.transaction_type,
+                    category=rec.category,
+                    wallet=rec.wallet,
+                    destination_wallet=rec.destination_wallet,
+                    amount=rec.amount,
+                    note=f"[Định kỳ] {rec.note}",
+                    created_at=execution_time
+                )
+                db.add(exp)
+                rec.last_executed_month = current_month_str
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                print("Error executing recurring transaction:", e)
+
+
+# Check and run recurring tasks on startup event
+@app.on_event("startup")
+def startup_event():
+    db = Session(bind=engine)
+    try:
+        run_recurring_scheduler_on_db(db)
+    except Exception as e:
+        print("Error executing startup recurring tasks:", e)
+    finally:
+        db.close()

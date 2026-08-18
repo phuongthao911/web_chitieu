@@ -934,3 +934,59 @@ button i {
 .budget-warn-badge.warning {
     background-color: var(--sakura-gold);
 }
+
+/* =========================
+   RECURRING TRANSACTIONS
+========================= */
+.recurring-section {
+    margin-top: 30px;
+    padding: 25px;
+}
+
+.recurring-section h2 {
+    margin-bottom: 20px;
+    color: var(--sakura-plum);
+}
+
+.recurring-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+}
+
+.recurring-form-panel {
+    background: var(--sakura-pale);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid #ffd9e6;
+}
+
+.recurring-form-panel h3 {
+    margin-bottom: 16px;
+    color: var(--sakura-plum);
+    font-size: 18px;
+}
+
+.recurring-list-panel {
+    background: var(--sakura-white);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid #ffd9e6;
+}
+
+.recurring-list-panel h3 {
+    margin-bottom: 16px;
+    color: var(--sakura-plum);
+    font-size: 18px;
+}
+
+.recurring-table-wrapper {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .recurring-grid {
+        grid-template-columns: 1fr;
+    }
+}
