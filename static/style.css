@@ -1080,8 +1080,92 @@ button i {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 15px;
+        font-size: 13px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    h2 {
+        font-size: 16px;
+    }
+
+    h3 {
+        font-size: 14px;
+    }
+
+    .top-tabs-bar {
+        gap: 6px;
+        margin-bottom: 20px;
+    }
+
+    .tab-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .tab-btn i {
+        font-size: 13px;
+    }
+
+    .header-titles h1 {
+        font-size: 22px;
+    }
+
+    .header-titles p {
+        font-size: 12px;
+    }
+
+    .summary .card p,
+    .wallet-card .wallet-amount {
+        font-size: 18px;
+    }
+
+    .summary .card h3,
+    .wallet-card .wallet-title {
+        font-size: 12px;
+    }
+
+    .form-group label {
+        font-size: 12px;
+    }
+
+    input, select, textarea, button {
+        font-size: 13px;
+    }
+
+    .btn {
+        font-size: 13px;
+        padding: 9px 16px;
+    }
+
+    table th, table td {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
     .recurring-grid {
         grid-template-columns: 1fr;
+    }
+
+    .recurring-form-panel h3,
+    .recurring-list-panel h3 {
+        font-size: 15px;
+    }
+
+    .budget-cat-name {
+        font-size: 14px;
+    }
+
+    .budget-ratio {
+        font-size: 12px;
+    }
+
+    .app-footer p {
+        font-size: 12px;
     }
 }
 
