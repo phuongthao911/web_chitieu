@@ -18,6 +18,7 @@ const historyTypeFilter = document.getElementById("history-type-filter");
 const historyMonthFilter = document.getElementById("history-month-filter");
 const historyWalletFilter = document.getElementById("history-wallet-filter");
 const historySearch = document.getElementById("history-search");
+const searchBtn = document.getElementById("search-btn");
 
 const WALLET_ID_MAP = {
     "Tiền mặt": "cash",
@@ -441,6 +442,14 @@ historyMonthFilter.addEventListener("change", renderTable);
 historyWalletFilter.addEventListener("change", renderTable);
 if (historySearch) {
     historySearch.addEventListener("input", renderTable);
+    historySearch.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            renderTable();
+        }
+    });
+}
+if (searchBtn) {
+    searchBtn.addEventListener("click", renderTable);
 }
 
 resetAmountInput();

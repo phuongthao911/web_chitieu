@@ -686,8 +686,15 @@ button i {
 
 }
 
-.search-group input[type="text"] {
+.search-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
     width: 100%;
+}
+
+.search-group input[type="text"] {
+    flex: 1;
     padding: 10px 14px;
     border: 1px solid #ffd9e6;
     border-radius: var(--radius-sm);
@@ -702,4 +709,29 @@ button i {
     outline: none;
     border-color: var(--sakura-rose);
     box-shadow: 0 0 8px rgba(242, 120, 158, 0.3);
+}
+
+.search-btn {
+    background: linear-gradient(135deg, var(--sakura-gold), var(--sakura-rose));
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s, transform 0.1s;
+    height: 38px;
+    width: 42px;
+}
+
+.search-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.03);
+}
+
+.search-btn:active {
+    transform: scale(0.97);
 }
