@@ -1023,11 +1023,11 @@ if (backupBtn && backupDropdown) {
     });
 }
 
-// Sidebar Tabs switching logic
-document.querySelectorAll(".sidebar-menu .menu-item").forEach(button => {
+// Top Tabs switching logic
+document.querySelectorAll(".top-tabs-bar .tab-btn").forEach(button => {
     button.addEventListener("click", () => {
-        // Remove active class from all menu buttons
-        document.querySelectorAll(".sidebar-menu .menu-item").forEach(btn => btn.classList.remove("active"));
+        // Remove active class from all tab buttons
+        document.querySelectorAll(".top-tabs-bar .tab-btn").forEach(btn => btn.classList.remove("active"));
         // Add active class to clicked button
         button.classList.add("active");
 
@@ -1041,3 +1041,113 @@ document.querySelectorAll(".sidebar-menu .menu-item").forEach(button => {
         }
     });
 });
+
+// JSON Import logic
+const importJsonInput = document.getElementById("import-json-file");
+if (importJsonInput) {
+    importJsonInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                
+                let itemCount = 0;
+                if (Array.isArray(data)) {
+                    itemCount = data.length;
+                } else if (data && typeof data === "object") {
+                    itemCount = (data.transactions?.length || 0) + (data.categories?.length || 0) + (data.budgets?.length || 0) + (data.recurring?.length || 0);
+                }
+
+                // Show confirming prompt
+                if (!confirm(`Bạn có chắc chắn muốn nhập dữ liệu backup (${itemCount} mục) từ file JSON này? Dữ liệu hiện tại sẽ được bảo lưu.`)) {
+                    importJsonInput.value = "";
+                    return;
+                }
+
+                const response = await fetch("/api/backup/import", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || "Nhập file thất bại.");
+                }
+
+                const result = await response.json();
+                alert(result.message || "Nhập dữ liệu thành công!");
+                
+                // Reload transactions, categories, budgets, and recurring settings across all tabs
+                await loadTransactions();
+                if (typeof loadCategories === "function") {
+                    await loadCategories();
+                }
+                if (typeof loadBudgets === "function") {
+                    await loadBudgets();
+                }
+                if (typeof loadRecurring === "function") {
+                    await loadRecurring();
+                }
+
+                // Close backup dropdown
+                if (backupDropdown) {
+                    backupDropdown.classList.remove("show");
+                }
+
+            } catch (error) {
+                alert("Lỗi: " + error.message);
+            } finally {
+                importJsonInput.value = "";
+            }
+        };
+        reader.readAsText(file);
+    });
+}
+
+// CSV Import logic
+const importCsvInput = document.getElementById("import-csv-file");
+if (importCsvInput) {
+    importCsvInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!confirm(`Bạn có chắc chắn muốn nhập dữ liệu từ file CSV "${file.name}"? Dữ liệu hiện tại sẽ được bảo lưu.`)) {
+            importCsvInput.value = "";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await fetch("/api/backup/import-csv", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.detail || "Nhập file CSV thất bại.");
+            }
+
+            const result = await response.json();
+            alert(result.message || "Nhập file CSV thành công!");
+
+            // Reload all data
+            await loadTransactions();
+            if (typeof loadCategories === "function") await loadCategories();
+            if (typeof loadBudgets === "function") await loadBudgets();
+            if (typeof loadRecurring === "function") await loadRecurring();
+
+            if (backupDropdown) backupDropdown.classList.remove("show");
+        } catch (error) {
+            alert("Lỗi: " + error.message);
+        } finally {
+            importCsvInput.value = "";
+        }
+    });
+}

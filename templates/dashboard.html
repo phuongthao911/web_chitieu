@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Expense Tracker</title>
 
-    <link rel="stylesheet" href="/static/style.css?v=1.1">
+    <link rel="stylesheet" href="/static/style.css?v=1.6">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,49 +19,59 @@
 
 <body>
 
-    <div class="app-layout">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <i class="fa-solid fa-wallet"></i>
-                <h2>Chi Tiêu App</h2>
-            </div>
-            <nav class="sidebar-menu">
-                <button type="button" class="menu-item active" data-tab="tab-dashboard">
-                    <i class="fa-solid fa-house"></i> Tổng quan
-                </button>
-                <button type="button" class="menu-item" data-tab="tab-categories">
-                    <i class="fa-solid fa-tags"></i> Danh mục
-                </button>
-                <button type="button" class="menu-item" data-tab="tab-budgets">
-                    <i class="fa-solid fa-chart-pie"></i> Ngân sách
-                </button>
-                <button type="button" class="menu-item" data-tab="tab-recurring">
-                    <i class="fa-solid fa-arrows-spin"></i> Định kỳ
-                </button>
-            </nav>
-            <div class="sidebar-footer">
-                <p>v1.5 Premium</p>
-            </div>
-        </aside>
+    <div class="container">
 
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <header>
-                <div class="header-titles">
-                    <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
-                    <p>Personal spending management</p>
-                </div>
-                <div class="backup-container">
-                    <button type="button" id="backup-btn" class="backup-btn">
-                        <i class="fa-solid fa-download"></i> Sao lưu dữ liệu
-                    </button>
-                    <div class="backup-dropdown" id="backup-dropdown">
-                        <a href="/api/backup/json" download><i class="fa-solid fa-file-code"></i> Tải file JSON</a>
-                        <a href="/api/backup/csv" download><i class="fa-solid fa-file-csv"></i> Tải file CSV</a>
+        <!-- Header -->
+        <header>
+            <div class="header-titles">
+                <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
+                <p>Personal spending management</p>
+            </div>
+            <div class="backup-container">
+                <button type="button" id="backup-btn" class="backup-btn">
+                    <i class="fa-solid fa-download-merge"></i> Dữ liệu
+                </button>
+                <div class="backup-dropdown" id="backup-dropdown">
+                    <div class="dropdown-section">
+                        <h4>Xuất toàn bộ dữ liệu (Export)</h4>
+                        <a href="/api/backup/json" download><i class="fa-solid fa-file-code"></i> Tải file JSON Backup (Đầy đủ)</a>
+                        <a href="/api/backup/csv" download><i class="fa-solid fa-file-csv"></i> Tải file CSV / Excel (Đầy đủ)</a>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-section">
+                        <h4>Nhập dữ liệu (Import Backup)</h4>
+                        <label for="import-json-file" class="import-label">
+                            <i class="fa-solid fa-file-import"></i> Chọn File JSON Backup
+                        </label>
+                        <input type="file" id="import-json-file" accept=".json" style="display: none;">
+
+                        <label for="import-csv-file" class="import-label" style="margin-top: 8px;">
+                            <i class="fa-solid fa-file-csv"></i> Chọn File CSV Backup / Excel
+                        </label>
+                        <input type="file" id="import-csv-file" accept=".csv" style="display: none;">
                     </div>
                 </div>
-            </header>
+            </div>
+        </header>
+
+        <!-- Fixed Top Tabs Navigation Bar -->
+        <nav class="top-tabs-bar">
+            <button type="button" class="tab-btn active" data-tab="tab-dashboard">
+                <i class="fa-solid fa-house"></i> Tổng quan
+            </button>
+            <button type="button" class="tab-btn" data-tab="tab-categories">
+                <i class="fa-solid fa-tags"></i> Danh mục
+            </button>
+            <button type="button" class="tab-btn" data-tab="tab-budgets">
+                <i class="fa-solid fa-chart-pie"></i> Ngân sách
+            </button>
+            <button type="button" class="tab-btn" data-tab="tab-recurring">
+                <i class="fa-solid fa-arrows-spin"></i> Định kỳ
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content-area">
 
             <!-- TAB: Dashboard (Overview) -->
             <div id="tab-dashboard" class="tab-pane active">
@@ -426,7 +436,7 @@
         </main>
     </div>
 
-    <script src="/static/script.js?v=1.5"></script>
+    <script src="/static/script.js?v=1.6"></script>
 
 </body>
 
