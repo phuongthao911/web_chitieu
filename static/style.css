@@ -899,6 +899,123 @@ button i {
     max-width: 250px;
 }
 
+.budget-total-card {
+    background: linear-gradient(135deg, #ffffff, #fff2f6);
+    border: 1.5px solid var(--sakura-soft-pink);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px var(--sakura-shadow);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.budget-total-card:hover {
+    transform: translateY(-2px);
+}
+
+.budget-total-card.status-danger {
+    border-color: var(--sakura-expense);
+    background: linear-gradient(135deg, #ffffff, #fff0f3);
+}
+
+.budget-total-card.status-warning {
+    border-color: var(--sakura-gold);
+    background: linear-gradient(135deg, #ffffff, #fffbf0);
+}
+
+.budget-total-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.budget-total-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.budget-total-badge {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--sakura-plum);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.budget-total-percent {
+    background: var(--sakura-pale);
+    color: var(--sakura-plum);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+}
+
+.status-danger .budget-total-percent {
+    background: #ffe3e8;
+    color: var(--sakura-expense);
+}
+
+.status-warning .budget-total-percent {
+    background: #fff3db;
+    color: #c98a00;
+}
+
+.budget-total-amounts {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.budget-total-spent {
+    color: var(--sakura-plum);
+}
+
+.budget-total-divider {
+    color: #ccc;
+}
+
+.budget-total-limit {
+    color: var(--sakura-rose);
+}
+
+.budget-total-progress-bg {
+    height: 14px;
+}
+
+.budget-total-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #666;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.budget-total-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.budget-total-stat-item.positive strong {
+    color: #2e8b57;
+}
+
+.budget-total-stat-item.negative strong {
+    color: var(--sakura-expense);
+}
+
 .budget-grid-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

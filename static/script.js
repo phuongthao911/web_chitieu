@@ -59,6 +59,7 @@ const trendChartCanvas = document.getElementById("trendChart");
 
 const budgetMonthFilter = document.getElementById("budget-month-filter");
 const budgetItemsContainer = document.getElementById("budget-items-container");
+const budgetTotalSummary = document.getElementById("budget-total-summary");
 
 let editingCategoryId = null;
 
@@ -392,9 +393,67 @@ function renderBudgets(budgets) {
     if (!budgetItemsContainer) return;
     budgetItemsContainer.innerHTML = "";
 
+    if (budgetTotalSummary) {
+        budgetTotalSummary.innerHTML = "";
+    }
+
     if (budgets.length === 0) {
         budgetItemsContainer.innerHTML = "<p>Vui lòng thêm danh mục chi tiêu trước.</p>";
+        if (budgetTotalSummary) {
+            budgetTotalSummary.style.display = "none";
+        }
         return;
+    }
+
+    // Calculate overall budget totals
+    let totalLimit = 0;
+    let totalSpending = 0;
+    budgets.forEach(b => {
+        totalLimit += (b.amount_limit || 0);
+        totalSpending += (b.actual_spending || 0);
+    });
+
+    if (budgetTotalSummary) {
+        budgetTotalSummary.style.display = "block";
+        const totalPercent = totalLimit > 0 ? (totalSpending / totalLimit) * 100 : 0;
+        let totalStatusClass = "status-safe";
+        if (totalPercent >= 100) {
+            totalStatusClass = "status-danger";
+        } else if (totalPercent >= 80) {
+            totalStatusClass = "status-warning";
+        }
+
+        const remaining = totalLimit - totalSpending;
+        let remainingHtml = "";
+        if (totalLimit > 0) {
+            if (remaining >= 0) {
+                remainingHtml = `<span class="budget-total-stat-item positive"><i class="fa-solid fa-coins"></i> Còn lại: <strong>${formatMoney(remaining)}</strong></span>`;
+            } else {
+                remainingHtml = `<span class="budget-total-stat-item negative"><i class="fa-solid fa-circle-exclamation"></i> Vượt mức: <strong>${formatMoney(Math.abs(remaining))}</strong></span>`;
+            }
+        }
+
+        budgetTotalSummary.className = `budget-total-card ${totalStatusClass}`;
+        budgetTotalSummary.innerHTML = `
+            <div class="budget-total-header">
+                <div class="budget-total-title-wrap">
+                    <span class="budget-total-badge"><i class="fa-solid fa-chart-pie"></i> Tổng quan ngân sách</span>
+                    <span class="budget-total-percent">${totalLimit > 0 ? totalPercent.toFixed(1) + '%' : 'Chưa đặt hạn mức'}</span>
+                </div>
+                <div class="budget-total-amounts">
+                    <span class="budget-total-spent">${formatMoney(totalSpending)}</span>
+                    <span class="budget-total-divider">/</span>
+                    <span class="budget-total-limit">${totalLimit > 0 ? formatMoney(totalLimit) : "Chưa đặt"}</span>
+                </div>
+            </div>
+            <div class="budget-progress-bg budget-total-progress-bg">
+                <div class="budget-progress-bar" style="width: ${Math.min(totalPercent, 100)}%"></div>
+            </div>
+            <div class="budget-total-footer">
+                <span class="budget-total-stat-item"><i class="fa-solid fa-layer-group"></i> ${budgets.length} danh mục</span>
+                ${remainingHtml}
+            </div>
+        `;
     }
 
     budgets.forEach(b => {
