@@ -1210,3 +1210,435 @@ if (importCsvInput) {
         }
     });
 }
+
+/* =========================================================
+   NOTES MANAGEMENT LOGIC (LocalStorage persistent)
+========================================================= */
+const NOTES_STORAGE_KEY = "expense_tracker_user_notes";
+let userNotes = [];
+let editingNoteId = null;
+
+const addNoteBtn = document.getElementById("add-note-btn");
+const noteEditorCard = document.getElementById("note-editor-card");
+const noteEditorTitle = document.getElementById("note-editor-title");
+const noteForm = document.getElementById("note-form");
+const noteTitleInput = document.getElementById("note-title-input");
+const noteContentInput = document.getElementById("note-content-input");
+const notePinnedInput = document.getElementById("note-pinned-input");
+const noteCancelBtn = document.getElementById("note-cancel-btn");
+const notesGridContainer = document.getElementById("notes-grid-container");
+const notesEmptyState = document.getElementById("notes-empty-state");
+
+function loadNotesFromStorage() {
+    try {
+        const stored = localStorage.getItem(NOTES_STORAGE_KEY);
+        if (stored) {
+            userNotes = JSON.parse(stored);
+        } else {
+            // Default sample notes
+            userNotes = [
+                {
+                    id: "note_1",
+                    title: "Kế hoạch tiết kiệm tháng này",
+                    content: "Mục tiêu: Dành ra ít nhất 20% thu nhập chuyển vào Ví tiết kiệm đầu tháng ngay sau khi nhận lương.",
+                    color: "pink",
+                    pinned: true,
+                    updatedAt: new Date().toLocaleDateString("vi-VN")
+                },
+                {
+                    id: "note_2",
+                    title: "Danh sách đồ cần mua sắp tới",
+                    content: "- Thay dầu xe máy định kỳ\n- Mua sắm nhu yếu phẩm siêu thị cuối tuần\n- Kiểm tra gia hạn gói Internet",
+                    color: "gold",
+                    pinned: false,
+                    updatedAt: new Date().toLocaleDateString("vi-VN")
+                }
+            ];
+            saveNotesToStorage();
+        }
+    } catch (e) {
+        userNotes = [];
+    }
+    renderNotes();
+}
+
+function saveNotesToStorage() {
+    try {
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(userNotes));
+    } catch (e) {
+        console.error("Failed to save notes:", e);
+    }
+}
+
+function renderNotes() {
+    if (!notesGridContainer) return;
+    notesGridContainer.innerHTML = "";
+
+    if (userNotes.length === 0) {
+        if (notesEmptyState) notesEmptyState.style.display = "block";
+        return;
+    }
+    if (notesEmptyState) notesEmptyState.style.display = "none";
+
+    // Sort: pinned notes first, then latest
+    const sorted = [...userNotes].sort((a, b) => {
+        if (a.pinned === b.pinned) return 0;
+        return a.pinned ? -1 : 1;
+    });
+
+    sorted.forEach(note => {
+        const card = document.createElement("div");
+        card.className = `note-card color-${note.color || 'pink'} ${note.pinned ? 'is-pinned' : ''}`;
+
+        if (note.pinned) {
+            const pinIcon = document.createElement("div");
+            pinIcon.className = "note-pin-badge";
+            pinIcon.innerHTML = '<i class="fa-solid fa-thumbtack"></i>';
+            card.appendChild(pinIcon);
+        }
+
+        const header = document.createElement("div");
+        header.className = "note-card-header";
+        const title = document.createElement("h3");
+        title.className = "note-card-title";
+        title.textContent = note.title;
+        header.appendChild(title);
+
+        const body = document.createElement("div");
+        body.className = "note-card-body";
+        body.textContent = note.content;
+
+        const footer = document.createElement("div");
+        footer.className = "note-card-footer";
+
+        const dateSpan = document.createElement("span");
+        dateSpan.textContent = note.updatedAt || "Hôm nay";
+
+        const actions = document.createElement("div");
+        actions.className = "note-actions";
+
+        // Pin button
+        const pinBtn = document.createElement("button");
+        pinBtn.type = "button";
+        pinBtn.className = `note-btn pin ${note.pinned ? 'active' : ''}`;
+        pinBtn.title = note.pinned ? "Bỏ ghim" : "Ghim lên đầu";
+        pinBtn.innerHTML = `<i class="fa-${note.pinned ? 'solid' : 'regular'} fa-thumbtack"></i>`;
+        pinBtn.addEventListener("click", () => togglePinNote(note.id));
+
+        // Edit button
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "note-btn edit";
+        editBtn.title = "Chỉnh sửa";
+        editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i>';
+        editBtn.addEventListener("click", () => openEditNote(note));
+
+        // Delete button
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "note-btn delete";
+        delBtn.title = "Xóa ghi chú";
+        delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        delBtn.addEventListener("click", () => deleteNote(note.id));
+
+        actions.appendChild(pinBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+
+        footer.appendChild(dateSpan);
+        footer.appendChild(actions);
+
+        card.appendChild(header);
+        card.appendChild(body);
+        card.appendChild(footer);
+
+        notesGridContainer.appendChild(card);
+    });
+}
+
+function openAddNote() {
+    editingNoteId = null;
+    noteForm.reset();
+    const pinkRadio = document.querySelector('input[name="note-color"][value="pink"]');
+    if (pinkRadio) pinkRadio.checked = true;
+    notePinnedInput.checked = false;
+    noteEditorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Thêm ghi chú mới';
+    noteEditorCard.style.display = "block";
+    noteTitleInput.focus();
+}
+
+function openEditNote(note) {
+    editingNoteId = note.id;
+    noteTitleInput.value = note.title;
+    noteContentInput.value = note.content;
+    const colorRadio = document.querySelector(`input[name="note-color"][value="${note.color || 'pink'}"]`);
+    if (colorRadio) colorRadio.checked = true;
+    notePinnedInput.checked = Boolean(note.pinned);
+    noteEditorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa ghi chú';
+    noteEditorCard.style.display = "block";
+    noteTitleInput.focus();
+}
+
+function closeNoteEditor() {
+    editingNoteId = null;
+    noteForm.reset();
+    noteEditorCard.style.display = "none";
+}
+
+function togglePinNote(id) {
+    userNotes = userNotes.map(n => {
+        if (n.id === id) {
+            return { ...n, pinned: !n.pinned };
+        }
+        return n;
+    });
+    saveNotesToStorage();
+    renderNotes();
+}
+
+function deleteNote(id) {
+    if (!confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) return;
+    userNotes = userNotes.filter(n => n.id !== id);
+    saveNotesToStorage();
+    renderNotes();
+}
+
+if (addNoteBtn) {
+    addNoteBtn.addEventListener("click", openAddNote);
+}
+
+if (noteCancelBtn) {
+    noteCancelBtn.addEventListener("click", closeNoteEditor);
+}
+
+if (noteForm) {
+    noteForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const title = noteTitleInput.value.trim();
+        const content = noteContentInput.value.trim();
+        const selectedColor = document.querySelector('input[name="note-color"]:checked')?.value || "pink";
+        const pinned = notePinnedInput.checked;
+
+        if (!title || !content) return;
+
+        const dateStr = new Date().toLocaleDateString("vi-VN");
+
+        if (editingNoteId) {
+            userNotes = userNotes.map(n => {
+                if (n.id === editingNoteId) {
+                    return {
+                        ...n,
+                        title,
+                        content,
+                        color: selectedColor,
+                        pinned,
+                        updatedAt: dateStr
+                    };
+                }
+                return n;
+            });
+        } else {
+            const newNote = {
+                id: "note_" + Date.now(),
+                title,
+                content,
+                color: selectedColor,
+                pinned,
+                updatedAt: dateStr
+            };
+            userNotes.unshift(newNote);
+        }
+
+        saveNotesToStorage();
+        renderNotes();
+        closeNoteEditor();
+    });
+}
+
+// Initialize Notes on page load
+loadNotesFromStorage();
+
+/* =========================================================
+   FLOATING MINI CALCULATOR LOGIC
+========================================================= */
+const calcToggleBtn = document.getElementById("calc-toggle-btn");
+const miniCalcCard = document.getElementById("mini-calculator-card");
+const calcCloseBtn = document.getElementById("calc-close-btn");
+const calcMinimizeBtn = document.getElementById("calc-minimize-btn");
+const calcDisplay = document.getElementById("calc-display");
+const calcHistory = document.getElementById("calc-history");
+
+let calcCurrentValue = "0";
+let calcPreviousValue = null;
+let calcCurrentOp = null;
+let calcResetOnNext = false;
+
+function updateCalcScreen() {
+    if (calcDisplay) {
+        // Format thousands with comma if valid number
+        const num = parseFloat(calcCurrentValue);
+        if (!isNaN(num) && calcCurrentValue.indexOf(".") === -1 && Math.abs(num) < 1e14) {
+            calcDisplay.textContent = num.toLocaleString("en-US");
+        } else {
+            calcDisplay.textContent = calcCurrentValue;
+        }
+    }
+}
+
+function handleCalcNumber(digit) {
+    if (calcResetOnNext) {
+        calcCurrentValue = digit === "000" ? "0" : digit;
+        calcResetOnNext = false;
+    } else {
+        if (digit === "000") {
+            if (calcCurrentValue !== "0") {
+                calcCurrentValue += "000";
+            }
+        } else {
+            if (calcCurrentValue === "0") {
+                calcCurrentValue = digit;
+            } else {
+                if (calcCurrentValue.length < 14) {
+                    calcCurrentValue += digit;
+                }
+            }
+        }
+    }
+    updateCalcScreen();
+}
+
+function handleCalcDecimal() {
+    if (calcResetOnNext) {
+        calcCurrentValue = "0.";
+        calcResetOnNext = false;
+    } else if (!calcCurrentValue.includes(".")) {
+        calcCurrentValue += ".";
+    }
+    updateCalcScreen();
+}
+
+function handleCalcAction(action) {
+    if (action === "clear") {
+        calcCurrentValue = "0";
+        calcPreviousValue = null;
+        calcCurrentOp = null;
+        calcResetOnNext = false;
+        if (calcHistory) calcHistory.textContent = "";
+        updateCalcScreen();
+        return;
+    }
+
+    if (action === "backspace") {
+        if (calcResetOnNext) return;
+        if (calcCurrentValue.length > 1) {
+            calcCurrentValue = calcCurrentValue.slice(0, -1);
+        } else {
+            calcCurrentValue = "0";
+        }
+        updateCalcScreen();
+        return;
+    }
+
+    if (action === "percent") {
+        const val = parseFloat(calcCurrentValue);
+        if (!isNaN(val)) {
+            calcCurrentValue = (val / 100).toString();
+            updateCalcScreen();
+        }
+        return;
+    }
+
+    if (["add", "subtract", "multiply", "divide"].includes(action)) {
+        const opSymbols = { add: "+", subtract: "−", multiply: "×", divide: "÷" };
+        const currentNum = parseFloat(calcCurrentValue);
+
+        if (calcPreviousValue !== null && calcCurrentOp && !calcResetOnNext) {
+            // Compute intermediate result
+            const res = computeMath(calcPreviousValue, currentNum, calcCurrentOp);
+            calcPreviousValue = res;
+            calcCurrentValue = res.toString();
+            updateCalcScreen();
+        } else {
+            calcPreviousValue = currentNum;
+        }
+
+        calcCurrentOp = action;
+        calcResetOnNext = true;
+        if (calcHistory) {
+            calcHistory.textContent = `${calcPreviousValue.toLocaleString("en-US")} ${opSymbols[action]}`;
+        }
+        return;
+    }
+
+    if (action === "calculate") {
+        if (calcPreviousValue === null || !calcCurrentOp) return;
+        const currentNum = parseFloat(calcCurrentValue);
+        const opSymbols = { add: "+", subtract: "−", multiply: "×", divide: "÷" };
+        const res = computeMath(calcPreviousValue, currentNum, calcCurrentOp);
+
+        if (calcHistory) {
+            calcHistory.textContent = `${calcPreviousValue.toLocaleString("en-US")} ${opSymbols[calcCurrentOp]} ${currentNum.toLocaleString("en-US")} =`;
+        }
+
+        calcCurrentValue = res.toString();
+        calcPreviousValue = null;
+        calcCurrentOp = null;
+        calcResetOnNext = true;
+        updateCalcScreen();
+    }
+}
+
+function computeMath(a, b, op) {
+    let result = 0;
+    switch (op) {
+        case "add":
+            result = a + b;
+            break;
+        case "subtract":
+            result = a - b;
+            break;
+        case "multiply":
+            result = a * b;
+            break;
+        case "divide":
+            result = b === 0 ? 0 : a / b;
+            break;
+    }
+    // Round to avoid floating precision issues
+    return Math.round(result * 100000000) / 100000000;
+}
+
+if (calcToggleBtn && miniCalcCard) {
+    calcToggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        miniCalcCard.classList.toggle("show");
+    });
+}
+
+if (calcCloseBtn && miniCalcCard) {
+    calcCloseBtn.addEventListener("click", () => {
+        miniCalcCard.classList.remove("show");
+    });
+}
+
+if (calcMinimizeBtn && miniCalcCard) {
+    calcMinimizeBtn.addEventListener("click", () => {
+        miniCalcCard.classList.remove("show");
+    });
+}
+
+// Calculator keypad click events
+document.querySelectorAll(".calc-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const num = btn.getAttribute("data-num");
+        const action = btn.getAttribute("data-action");
+
+        if (num !== null) {
+            handleCalcNumber(num);
+        } else if (action === "decimal") {
+            handleCalcDecimal();
+        } else if (action) {
+            handleCalcAction(action);
+        }
+    });
+});

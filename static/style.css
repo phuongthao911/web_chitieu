@@ -1321,3 +1321,598 @@ button i {
     30% { transform: scale(1); }
     45% { transform: scale(1.15); }
 }
+
+/* =========================================================
+   NOTES TAB STYLES
+========================================================= */
+.notes-section {
+    background: var(--sakura-white);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: 0 8px 24px var(--sakura-shadow);
+    border: 1px solid #ffd9e6;
+    margin-bottom: 30px;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.notes-header h2 {
+    font-size: 20px;
+    color: var(--sakura-plum);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.add-note-btn {
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
+    color: var(--sakura-white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(232, 92, 133, 0.25);
+    transition: all 0.25s ease;
+}
+
+.add-note-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(232, 92, 133, 0.35);
+}
+
+/* Note Editor Card */
+.note-editor-card {
+    background: var(--sakura-pale);
+    border: 1px solid #ffccd9;
+    border-radius: var(--radius-md);
+    padding: 22px;
+    margin-bottom: 28px;
+    animation: fadeIn 0.3s ease;
+}
+
+.note-editor-card h3 {
+    font-size: 16px;
+    color: var(--sakura-plum);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.note-editor-card textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ffd0de;
+    border-radius: var(--radius-sm);
+    background: var(--sakura-white);
+    color: var(--sakura-plum);
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.note-editor-card textarea:focus {
+    border-color: var(--sakura-rose);
+    box-shadow: 0 0 0 3px rgba(242, 120, 158, 0.2);
+}
+
+.note-form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 14px;
+    margin-bottom: 18px;
+}
+
+.color-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.color-picker-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sakura-plum-soft);
+    margin-bottom: 0;
+}
+
+.note-color-options {
+    display: flex;
+    gap: 10px;
+}
+
+.color-option input[type="radio"] {
+    display: none;
+}
+
+.color-circle {
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-circle.pink { background: #ffeaf1; border: 2px solid #f2789e; }
+.color-circle.gold { background: #fff5e6; border: 2px solid #eb9c5c; }
+.color-circle.green { background: #eafaf1; border: 2px solid #6fc79a; }
+.color-circle.blue { background: #eef7fc; border: 2px solid #8ec9e0; }
+.color-circle.purple { background: #f6edfa; border: 2px solid #c99ee0; }
+
+.color-option input[type="radio"]:checked + .color-circle {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 2px var(--sakura-white), 0 0 0 4px var(--sakura-deep);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sakura-plum);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--sakura-rose);
+    cursor: pointer;
+}
+
+.note-form-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.save-note-btn {
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
+    color: var(--sakura-white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.save-note-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.cancel-note-btn {
+    background: #f0e6eb;
+    color: var(--sakura-plum-soft);
+    border: none;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-note-btn:hover {
+    background: #e2d3dc;
+    color: var(--sakura-plum);
+}
+
+/* Notes Grid */
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.note-card {
+    border-radius: var(--radius-md);
+    padding: 20px;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 14px rgba(216, 92, 133, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s ease;
+    min-height: 170px;
+}
+
+.note-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(216, 92, 133, 0.16);
+}
+
+.note-card.color-pink { background: #fff5f8; border-color: #ffd4e1; }
+.note-card.color-gold { background: #fffaf2; border-color: #ffe6cb; }
+.note-card.color-green { background: #f3fbf6; border-color: #d1f4e1; }
+.note-card.color-blue { background: #f4faff; border-color: #d8edfc; }
+.note-card.color-purple { background: #faf5fd; border-color: #eedcfa; }
+
+.note-card.is-pinned {
+    border-width: 2px;
+    border-color: var(--sakura-rose);
+    box-shadow: 0 6px 18px rgba(242, 120, 158, 0.18);
+}
+
+.note-pin-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    color: var(--sakura-rose);
+    font-size: 14px;
+    transform: rotate(25deg);
+}
+
+.note-card-header {
+    margin-bottom: 10px;
+    padding-right: 24px;
+}
+
+.note-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--sakura-plum);
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.note-card-body {
+    font-size: 13.5px;
+    color: var(--sakura-plum);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 16px;
+    flex-grow: 1;
+}
+
+.note-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed rgba(110, 58, 80, 0.12);
+    padding-top: 10px;
+    font-size: 11.5px;
+    color: var(--sakura-plum-soft);
+}
+
+.note-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.note-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--sakura-plum-soft);
+}
+
+.note-btn:hover {
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--sakura-rose);
+}
+
+.note-btn.delete:hover {
+    color: #e53935;
+}
+
+.note-btn.pin.active {
+    color: var(--sakura-rose);
+}
+
+.notes-empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--sakura-plum-soft);
+}
+
+.notes-empty-state i {
+    font-size: 48px;
+    margin-bottom: 14px;
+    opacity: 0.5;
+    color: var(--sakura-rose);
+}
+
+.notes-empty-state p {
+    font-size: 15px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* =========================================================
+   FLOATING MINI CALCULATOR WIDGET (Bottom-Right)
+========================================================= */
+.floating-calc-wrapper {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* Toggle Circle Button */
+.calc-toggle-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
+    color: var(--sakura-white);
+    border: 2px solid var(--sakura-white);
+    box-shadow: 0 6px 18px rgba(232, 92, 133, 0.38);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    outline: none;
+}
+
+.calc-toggle-btn:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 24px rgba(232, 92, 133, 0.48);
+}
+
+.calc-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.calc-badge-tooltip {
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--sakura-plum);
+    color: var(--sakura-white);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.calc-badge-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent transparent var(--sakura-plum);
+}
+
+.calc-toggle-btn:hover .calc-badge-tooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-4px);
+}
+
+/* Calculator Card Modal / Box */
+.mini-calculator-card {
+    display: none;
+    position: absolute;
+    bottom: 64px;
+    right: 0;
+    width: 290px;
+    background: var(--sakura-white);
+    border-radius: var(--radius-md);
+    border: 1px solid #ffd0df;
+    box-shadow: 0 12px 36px rgba(110, 58, 80, 0.22);
+    overflow: hidden;
+    animation: popupScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.mini-calculator-card.show {
+    display: block;
+}
+
+@keyframes popupScale {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.calc-header {
+    background: linear-gradient(135deg, var(--sakura-pale), #ffe0ec);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ffccd9;
+}
+
+.calc-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--sakura-plum);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.calc-title i {
+    color: var(--sakura-rose);
+    font-size: 14px;
+}
+
+.calc-header-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.calc-header-actions button {
+    background: transparent;
+    border: none;
+    color: var(--sakura-plum-soft);
+    font-size: 12px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.calc-header-actions button:hover {
+    background: rgba(232, 92, 133, 0.15);
+    color: var(--sakura-deep);
+}
+
+/* Calculator Screen */
+.calc-screen {
+    background: #fff8fa;
+    padding: 12px 16px;
+    text-align: right;
+    border-bottom: 1px solid #ffebf1;
+}
+
+.calc-history {
+    min-height: 18px;
+    font-size: 12px;
+    color: var(--sakura-plum-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.calc-display {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--sakura-plum);
+    letter-spacing: 0.5px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+}
+
+.calc-display::-webkit-scrollbar {
+    display: none;
+}
+
+/* Calculator Keypad */
+.calc-keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 12px;
+    background: var(--sakura-white);
+}
+
+.calc-btn {
+    border: 1px solid #ffe1eb;
+    background: #fffbfa;
+    border-radius: var(--radius-sm);
+    color: var(--sakura-plum);
+    font-size: 15px;
+    font-weight: 600;
+    height: 42px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.calc-btn:hover {
+    background: var(--sakura-pale);
+    border-color: var(--sakura-pink);
+    transform: translateY(-1px);
+}
+
+.calc-btn:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+.calc-btn.btn-func {
+    background: #fff0f5;
+    color: var(--sakura-rose);
+    font-weight: 700;
+}
+
+.calc-btn.btn-func:hover {
+    background: #ffe3ee;
+}
+
+.calc-btn.btn-op {
+    background: linear-gradient(135deg, #fff2f6, #ffe6ee);
+    color: var(--sakura-deep);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.calc-btn.btn-op:hover {
+    background: linear-gradient(135deg, #ffe2ec, #ffd4e2);
+}
+
+.calc-btn.btn-equals {
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
+    color: var(--sakura-white);
+    border-color: transparent;
+    font-weight: 700;
+    font-size: 18px;
+    box-shadow: 0 3px 8px rgba(232, 92, 133, 0.3);
+}
+
+.calc-btn.btn-equals:hover {
+    background: linear-gradient(135deg, var(--sakura-deep), #d84570);
+    box-shadow: 0 4px 12px rgba(232, 92, 133, 0.4);
+}
+
+@media (max-width: 480px) {
+    .floating-calc-wrapper {
+        bottom: 16px;
+        right: 16px;
+    }
+
+    .mini-calculator-card {
+        width: 270px;
+        bottom: 60px;
+        right: 0;
+    }
+}
