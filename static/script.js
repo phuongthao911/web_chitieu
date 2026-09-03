@@ -1528,7 +1528,7 @@ const counterEmptyState = document.getElementById("counter-empty-state");
 
 /**
  * Calculates workdays (Monday-Friday) and total calendar days between two dates.
- * d1, d2 are Date objects.
+ * Both start date and end date are included (inclusive counting - tính cả ngày bắt đầu và kết thúc).
  */
 function calculateDaysDifference(d1, d2) {
     // Normalize dates to midnight
@@ -1540,17 +1540,18 @@ function calculateDaysDifference(d1, d2) {
     const to = isNegative ? start : end;
 
     const oneDay = 24 * 60 * 60 * 1000;
-    const totalCalendarDays = Math.round((to - from) / oneDay);
+    // Total calendar days inclusive (from through to)
+    const totalCalendarDays = Math.round((to - from) / oneDay) + 1;
 
     let workdays = 0;
     const cur = new Date(from);
-    // Iterate day by day from start to end (excluding start, or inclusive counting standard)
-    while (cur < to) {
-        cur.setDate(cur.getDate() + 1);
+    // Iterate day by day from start to end inclusive
+    while (cur <= to) {
         const dayOfWeek = cur.getDay(); // 0 = Sunday, 6 = Saturday
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
             workdays++;
         }
+        cur.setDate(cur.getDate() + 1);
     }
 
     return {
@@ -1654,13 +1655,13 @@ function renderCounterEvents() {
         let statusClass = "";
 
         if (targetMidnight > todayMidnight) {
-            statusText = `Còn ${diff.calendarDays} ngày nữa`;
+            statusText = `Còn ${diff.calendarDays} ngày (tính cả hôm nay)`;
             statusClass = "future";
         } else if (targetMidnight < todayMidnight) {
             statusText = `Đã qua ${diff.calendarDays} ngày`;
             statusClass = "past";
         } else {
-            statusText = "Hôm nay là ngày mốc!";
+            statusText = "Hôm nay chính là ngày mốc!";
             statusClass = "today";
         }
 
