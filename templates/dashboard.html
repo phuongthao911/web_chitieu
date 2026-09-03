@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Expense Tracker</title>
 
-    <link rel="stylesheet" href="/static/style.css?v=2.2">
+    <link rel="stylesheet" href="/static/style.css?v=2.3">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -454,7 +454,7 @@
                         </button>
                     </div>
 
-                    <!-- Note Form Card (Add/Edit) -->
+                    <!-- Note Form Card (Add/Edit) Rich Text Editor -->
                     <div class="note-editor-card" id="note-editor-card" style="display: none;">
                         <h3 id="note-editor-title"><i class="fa-solid fa-pen-to-square"></i> Thêm ghi chú mới</h3>
                         <form id="note-form">
@@ -462,10 +462,63 @@
                                 <label for="note-title-input">Tiêu đề ghi chú</label>
                                 <input type="text" id="note-title-input" placeholder="Ví dụ: Kế hoạch chi tiêu tuần tới..." required>
                             </div>
+
+                            <!-- Rich Text Toolbar -->
                             <div class="form-group">
-                                <label for="note-content-input">Nội dung chi tiết</label>
-                                <textarea id="note-content-input" rows="4" placeholder="Nhập nội dung ghi chú, nhắc nhở chi tiêu, mua sắm..." required></textarea>
+                                <label>Nội dung ghi chú</label>
+                                <div class="note-rich-toolbar" id="note-rich-toolbar">
+                                    <div class="toolbar-group">
+                                        <button type="button" class="toolbar-btn" data-command="bold" title="In đậm (Bold)">
+                                            <i class="fa-solid fa-bold"></i>
+                                        </button>
+                                        <button type="button" class="toolbar-btn" data-command="italic" title="In nghiêng (Italic)">
+                                            <i class="fa-solid fa-italic"></i>
+                                        </button>
+                                        <button type="button" class="toolbar-btn" data-command="underline" title="Gạch chân (Underline)">
+                                            <i class="fa-solid fa-underline"></i>
+                                        </button>
+                                        <button type="button" class="toolbar-btn" data-command="strikeThrough" title="Gạch ngang (Strikethrough)">
+                                            <i class="fa-solid fa-strikethrough"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="toolbar-divider"></div>
+
+                                    <div class="toolbar-group">
+                                        <button type="button" class="toolbar-btn" data-command="insertUnorderedList" title="Danh sách chấm đầu dòng (• Bullet List)">
+                                            <i class="fa-solid fa-list-ul"></i>
+                                        </button>
+                                        <button type="button" class="toolbar-btn" data-command="insertOrderedList" title="Danh sách đánh số (1, 2, 3...)">
+                                            <i class="fa-solid fa-list-ol"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="toolbar-divider"></div>
+
+                                    <div class="toolbar-group font-size-group">
+                                        <select id="note-fontsize-select" title="Cỡ chữ">
+                                            <option value="3">Cỡ chữ vừa (Chuẩn)</option>
+                                            <option value="1">Cỡ chữ nhỏ (12px)</option>
+                                            <option value="2">Cỡ chữ nhỏ vừa (13.5px)</option>
+                                            <option value="4">Cỡ chữ lớn (16px)</option>
+                                            <option value="5">Cỡ chữ tiêu đề (18px)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="toolbar-divider"></div>
+
+                                    <div class="toolbar-group text-color-picker-group">
+                                        <label for="note-text-color-input" class="text-color-label" title="Chọn màu chữ">
+                                            <i class="fa-solid fa-palette"></i>
+                                            <input type="color" id="note-text-color-input" value="#6e3a50">
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Rich Text Contenteditable Area -->
+                                <div class="note-rich-editor" id="note-rich-editor" contenteditable="true" data-placeholder="Nhập nội dung ghi chú, nhắc nhở chi tiêu, mua sắm..."></div>
                             </div>
+
                             <div class="note-form-row">
                                 <div class="form-group color-picker-group">
                                     <label>Màu thẻ ghi chú</label>
@@ -669,7 +722,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=2.2"></script>
+    <script src="/static/script.js?v=2.3"></script>
 
 </body>
 

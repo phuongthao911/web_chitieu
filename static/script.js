@@ -1223,11 +1223,45 @@ const noteEditorCard = document.getElementById("note-editor-card");
 const noteEditorTitle = document.getElementById("note-editor-title");
 const noteForm = document.getElementById("note-form");
 const noteTitleInput = document.getElementById("note-title-input");
-const noteContentInput = document.getElementById("note-content-input");
+const noteRichEditor = document.getElementById("note-rich-editor");
+const noteTextColorInput = document.getElementById("note-text-color-input");
+const noteFontSizeSelect = document.getElementById("note-fontsize-select");
 const notePinnedInput = document.getElementById("note-pinned-input");
 const noteCancelBtn = document.getElementById("note-cancel-btn");
 const notesGridContainer = document.getElementById("notes-grid-container");
 const notesEmptyState = document.getElementById("notes-empty-state");
+
+// Rich Text Toolbar Actions
+document.querySelectorAll(".note-rich-toolbar .toolbar-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const command = btn.getAttribute("data-command");
+        if (command) {
+            document.execCommand(command, false, null);
+            if (noteRichEditor) noteRichEditor.focus();
+        }
+    });
+});
+
+if (noteFontSizeSelect) {
+    noteFontSizeSelect.addEventListener("change", (e) => {
+        const sizeVal = e.target.value;
+        if (sizeVal) {
+            document.execCommand("fontSize", false, sizeVal);
+            if (noteRichEditor) noteRichEditor.focus();
+        }
+    });
+}
+
+if (noteTextColorInput) {
+    noteTextColorInput.addEventListener("input", (e) => {
+        const colorVal = e.target.value;
+        if (colorVal) {
+            document.execCommand("foreColor", false, colorVal);
+            if (noteRichEditor) noteRichEditor.focus();
+        }
+    });
+}
 
 function loadNotesFromStorage() {
     try {
@@ -1235,12 +1269,12 @@ function loadNotesFromStorage() {
         if (stored) {
             userNotes = JSON.parse(stored);
         } else {
-            // Default sample notes
+            // Default sample notes with rich HTML
             userNotes = [
                 {
                     id: "note_1",
                     title: "Kế hoạch tiết kiệm tháng này",
-                    content: "Mục tiêu: Dành ra ít nhất 20% thu nhập chuyển vào Ví tiết kiệm đầu tháng ngay sau khi nhận lương.",
+                    contentHtml: "<p><strong>Mục tiêu:</strong> Dành ra ít nhất <u>20% thu nhập</u> chuyển vào Ví tiết kiệm đầu tháng ngay sau khi nhận lương.</p><ul><li>Hạn chế ăn ngoài quá 3 lần/tuần</li><li>Ghi chép chi tiêu mỗi ngày</li></ul>",
                     color: "pink",
                     pinned: true,
                     updatedAt: new Date().toLocaleDateString("vi-VN")
@@ -1248,7 +1282,7 @@ function loadNotesFromStorage() {
                 {
                     id: "note_2",
                     title: "Danh sách đồ cần mua sắp tới",
-                    content: "- Thay dầu xe máy định kỳ\n- Mua sắm nhu yếu phẩm siêu thị cuối tuần\n- Kiểm tra gia hạn gói Internet",
+                    contentHtml: "<ol><li>Thay dầu xe máy định kỳ</li><li>Mua sắm nhu yếu phẩm siêu thị cuối tuần</li><li>Kiểm tra gia hạn gói Internet</li></ol>",
                     color: "gold",
                     pinned: false,
                     updatedAt: new Date().toLocaleDateString("vi-VN")
@@ -1306,7 +1340,13 @@ function renderNotes() {
 
         const body = document.createElement("div");
         body.className = "note-card-body";
-        body.textContent = note.content;
+        // Render rich HTML content preserving formatting, fonts, colors, lists
+        if (note.contentHtml) {
+            body.innerHTML = note.contentHtml;
+        } else if (note.content) {
+            // Legacy plain text fallback
+            body.textContent = note.content;
+        }
 
         const footer = document.createElement("div");
         footer.className = "note-card-footer";
@@ -1359,6 +1399,7 @@ function renderNotes() {
 function openAddNote() {
     editingNoteId = null;
     noteForm.reset();
+    if (noteRichEditor) noteRichEditor.innerHTML = "";
     const pinkRadio = document.querySelector('input[name="note-color"][value="pink"]');
     if (pinkRadio) pinkRadio.checked = true;
     notePinnedInput.checked = false;
@@ -1370,7 +1411,9 @@ function openAddNote() {
 function openEditNote(note) {
     editingNoteId = note.id;
     noteTitleInput.value = note.title;
-    noteContentInput.value = note.content;
+    if (noteRichEditor) {
+        noteRichEditor.innerHTML = note.contentHtml || (note.content ? note.content.replace(/\n/g, "<br>") : "");
+    }
     const colorRadio = document.querySelector(`input[name="note-color"][value="${note.color || 'pink'}"]`);
     if (colorRadio) colorRadio.checked = true;
     notePinnedInput.checked = Boolean(note.pinned);
@@ -1382,6 +1425,7 @@ function openEditNote(note) {
 function closeNoteEditor() {
     editingNoteId = null;
     noteForm.reset();
+    if (noteRichEditor) noteRichEditor.innerHTML = "";
     noteEditorCard.style.display = "none";
 }
 
@@ -1415,11 +1459,14 @@ if (noteForm) {
     noteForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const title = noteTitleInput.value.trim();
-        const content = noteContentInput.value.trim();
+        const contentHtml = noteRichEditor ? noteRichEditor.innerHTML.trim() : "";
         const selectedColor = document.querySelector('input[name="note-color"]:checked')?.value || "pink";
         const pinned = notePinnedInput.checked;
 
-        if (!title || !content) return;
+        if (!title || !contentHtml || contentHtml === "<br>") {
+            alert("Vui lòng nhập cả tiêu đề và nội dung ghi chú.");
+            return;
+        }
 
         const dateStr = new Date().toLocaleDateString("vi-VN");
 
@@ -1429,7 +1476,7 @@ if (noteForm) {
                     return {
                         ...n,
                         title,
-                        content,
+                        contentHtml,
                         color: selectedColor,
                         pinned,
                         updatedAt: dateStr
@@ -1441,7 +1488,7 @@ if (noteForm) {
             const newNote = {
                 id: "note_" + Date.now(),
                 title,
-                content,
+                contentHtml,
                 color: selectedColor,
                 pinned,
                 updatedAt: dateStr

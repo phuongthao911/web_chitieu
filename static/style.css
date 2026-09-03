@@ -1391,22 +1391,155 @@ button i {
     gap: 8px;
 }
 
-.note-editor-card textarea {
+/* Note Rich Text Toolbar & Editor */
+.note-rich-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1.5px solid #ffd0df;
+    border-bottom: none;
+    border-top-left-radius: var(--radius-sm);
+    border-top-right-radius: var(--radius-sm);
+    padding: 8px 12px;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 22px;
+    background: #ffd6e3;
+    margin: 0 4px;
+}
+
+.toolbar-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    color: var(--sakura-plum) !important;
+    border: 1px solid transparent !important;
+    font-size: 13px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    flex: none !important;
+    transition: all 0.15s ease !important;
+}
+
+.toolbar-btn:hover {
+    background: var(--sakura-pale) !important;
+    border-color: #ffccd9 !important;
+    color: var(--sakura-deep) !important;
+    transform: none !important;
+}
+
+.toolbar-btn.active {
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep)) !important;
+    color: #ffffff !important;
+}
+
+#note-fontsize-select {
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 12.5px;
+    border: 1px solid #ffd0df;
+    border-radius: 6px;
+    background: #fff8fa;
+    color: var(--sakura-plum);
+    cursor: pointer;
+    outline: none;
+}
+
+.text-color-label {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid #ffd0df;
+    background: #fff8fa;
+    color: var(--sakura-rose);
+    position: relative;
+    transition: all 0.15s;
+}
+
+.text-color-label:hover {
+    background: #ffe6ef;
+    border-color: var(--sakura-pink);
+}
+
+.text-color-label input[type="color"] {
+    position: absolute;
+    opacity: 0;
     width: 100%;
-    padding: 12px 14px;
-    border: 1px solid #ffd0de;
-    border-radius: var(--radius-sm);
-    background: var(--sakura-white);
+    height: 100%;
+    cursor: pointer;
+}
+
+/* Rich Text Editor Box */
+.note-rich-editor {
+    min-height: 140px;
+    max-height: 350px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1.5px solid #ffd0df;
+    border-bottom-left-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+    padding: 14px 16px;
     color: var(--sakura-plum);
     font-size: 14px;
-    resize: vertical;
+    line-height: 1.65;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.note-editor-card textarea:focus {
+.note-rich-editor:focus {
     border-color: var(--sakura-rose);
-    box-shadow: 0 0 0 3px rgba(242, 120, 158, 0.2);
+    box-shadow: 0 0 0 3px rgba(242, 120, 158, 0.18);
+}
+
+.note-rich-editor:empty:before {
+    content: attr(data-placeholder);
+    color: #b38ca0;
+    pointer-events: none;
+    display: block;
+}
+
+.note-rich-editor ul,
+.note-rich-editor ol,
+.note-card-body ul,
+.note-card-body ol {
+    margin: 8px 0 8px 24px;
+}
+
+.note-rich-editor li,
+.note-card-body li {
+    margin-bottom: 4px;
+}
+
+.note-card-body {
+    font-size: 14px;
+    color: var(--sakura-plum);
+    line-height: 1.65;
+    word-break: break-word;
+    margin-bottom: 16px;
+    flex-grow: 1;
+}
+
+.note-card-body p {
+    margin-bottom: 6px;
 }
 
 .note-form-row {
