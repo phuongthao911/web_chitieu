@@ -1651,6 +1651,365 @@ button i {
 }
 
 /* =========================================================
+   DAY COUNTER TAB STYLES (Đếm ngày)
+========================================================= */
+.counter-section {
+    background: var(--sakura-white);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: 0 8px 24px var(--sakura-shadow);
+    border: 1px solid #ffd9e6;
+    margin-bottom: 30px;
+}
+
+.counter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.counter-header h2 {
+    font-size: 20px;
+    color: var(--sakura-plum);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.add-counter-btn {
+    background: linear-gradient(135deg, var(--sakura-gold), var(--sakura-rose));
+    color: var(--sakura-white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(235, 156, 92, 0.25);
+    transition: all 0.25s ease;
+}
+
+.add-counter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(235, 156, 92, 0.35);
+}
+
+/* Quick Range Calculator Box */
+.quick-calc-box {
+    background: linear-gradient(135deg, #fff7fa, #ffedf4);
+    border: 1.5px solid #ffd0df;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 16px rgba(216, 92, 133, 0.08);
+}
+
+.quick-calc-box h3 {
+    font-size: 16px;
+    color: var(--sakura-plum);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quick-calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.range-results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.result-box {
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease;
+}
+
+.result-box:hover {
+    transform: translateY(-2px);
+}
+
+.result-box.workdays-box {
+    background: linear-gradient(135deg, #effaf5, #e0f6ec);
+    border-color: #b7ebd3;
+}
+
+.result-box.calendardays-box {
+    background: linear-gradient(135deg, #fdf4f8, #fce6f0);
+    border-color: #ffd0e2;
+}
+
+.result-badge {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.workdays-box .result-badge {
+    color: #2b8259;
+}
+
+.calendardays-box .result-badge {
+    color: var(--sakura-deep);
+}
+
+.result-number {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    font-family: "Quicksand", sans-serif;
+}
+
+.workdays-box .result-number {
+    color: #1f6e4a;
+}
+
+.calendardays-box .result-number {
+    color: var(--sakura-plum);
+}
+
+.result-desc {
+    font-size: 12px;
+    color: var(--sakura-plum-soft);
+}
+
+/* Event Editor Card */
+.counter-editor-card {
+    background: var(--sakura-pale);
+    border: 1px solid #ffccd9;
+    border-radius: var(--radius-md);
+    padding: 22px;
+    margin-bottom: 28px;
+    animation: fadeIn 0.3s ease;
+}
+
+.counter-editor-card h3 {
+    font-size: 16px;
+    color: var(--sakura-plum);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.counter-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.counter-form-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.save-counter-btn {
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
+    color: var(--sakura-white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.save-counter-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.cancel-counter-btn {
+    background: #f0e6eb;
+    color: var(--sakura-plum-soft);
+    border: none;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-counter-btn:hover {
+    background: #e2d3dc;
+    color: var(--sakura-plum);
+}
+
+/* Counter Events List Grid */
+.counter-events-title {
+    font-size: 17px;
+    color: var(--sakura-plum);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.counter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.counter-card {
+    background: var(--sakura-white);
+    border: 1.5px solid #ffd8e5;
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: 0 4px 14px rgba(216, 92, 133, 0.08);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s ease;
+}
+
+.counter-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(216, 92, 133, 0.16);
+}
+
+.counter-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.counter-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--sakura-plum);
+    word-break: break-word;
+    line-height: 1.35;
+}
+
+.counter-card-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.counter-card-status-badge.future {
+    background: #fff0f5;
+    color: var(--sakura-deep);
+    border: 1px solid #ffd0df;
+}
+
+.counter-card-status-badge.today {
+    background: #eafaf1;
+    color: #1f6e4a;
+    border: 1px solid #b7ebd3;
+}
+
+.counter-card-status-badge.past {
+    background: #f4f4f6;
+    color: #6c757d;
+    border: 1px solid #e2e2e6;
+}
+
+.counter-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+    background: #fff9fb;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    border: 1px solid #ffedf3;
+}
+
+.counter-stat-item {
+    text-align: center;
+}
+
+.counter-stat-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--sakura-plum-soft);
+    margin-bottom: 2px;
+    display: block;
+}
+
+.counter-stat-val {
+    font-size: 24px;
+    font-weight: 800;
+    font-family: "Quicksand", sans-serif;
+    line-height: 1.1;
+}
+
+.counter-stat-item.workday .counter-stat-val {
+    color: #2b8259;
+}
+
+.counter-stat-item.calendar .counter-stat-val {
+    color: var(--sakura-deep);
+}
+
+.counter-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed rgba(110, 58, 80, 0.12);
+    padding-top: 10px;
+    font-size: 12px;
+    color: var(--sakura-plum-soft);
+}
+
+.counter-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--sakura-plum-soft);
+}
+
+.counter-empty-state i {
+    font-size: 46px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+    color: var(--sakura-gold);
+}
+
+.counter-empty-state p {
+    font-size: 14.5px;
+    max-width: 450px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .quick-calc-grid,
+    .range-results-grid,
+    .counter-form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
    FLOATING MINI CALCULATOR WIDGET (Bottom-Right)
    Realistic Mechanical Style — Sakura Aesthetic
 ========================================================= */

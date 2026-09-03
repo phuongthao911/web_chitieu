@@ -1459,6 +1459,276 @@ if (noteForm) {
 loadNotesFromStorage();
 
 /* =========================================================
+   DAY COUNTER LOGIC (Đếm ngày: Ngày đi làm vs Ngày thường)
+========================================================= */
+const COUNTER_STORAGE_KEY = "expense_tracker_day_counters";
+let dayCounterEvents = [];
+
+const rangeStartDateInput = document.getElementById("range-start-date");
+const rangeEndDateInput = document.getElementById("range-end-date");
+const calcWorkdaysResult = document.getElementById("calc-workdays-result");
+const calcCalendardaysResult = document.getElementById("calc-calendardays-result");
+
+const addCounterTargetBtn = document.getElementById("add-counter-target-btn");
+const counterEditorCard = document.getElementById("counter-editor-card");
+const counterForm = document.getElementById("counter-form");
+const counterTitleInput = document.getElementById("counter-title-input");
+const counterDateInput = document.getElementById("counter-date-input");
+const counterModeSelect = document.getElementById("counter-mode-select");
+const counterCancelBtn = document.getElementById("counter-cancel-btn");
+const counterGridContainer = document.getElementById("counter-grid-container");
+const counterEmptyState = document.getElementById("counter-empty-state");
+
+/**
+ * Calculates workdays (Monday-Friday) and total calendar days between two dates.
+ * d1, d2 are Date objects.
+ */
+function calculateDaysDifference(d1, d2) {
+    // Normalize dates to midnight
+    const start = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
+    const end = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+
+    const isNegative = end < start;
+    const from = isNegative ? end : start;
+    const to = isNegative ? start : end;
+
+    const oneDay = 24 * 60 * 60 * 1000;
+    const totalCalendarDays = Math.round((to - from) / oneDay);
+
+    let workdays = 0;
+    const cur = new Date(from);
+    // Iterate day by day from start to end (excluding start, or inclusive counting standard)
+    while (cur < to) {
+        cur.setDate(cur.getDate() + 1);
+        const dayOfWeek = cur.getDay(); // 0 = Sunday, 6 = Saturday
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            workdays++;
+        }
+    }
+
+    return {
+        calendarDays: totalCalendarDays,
+        workdays: workdays,
+        isNegative: isNegative
+    };
+}
+
+function updateQuickRangeCalc() {
+    if (!rangeStartDateInput || !rangeEndDateInput) return;
+
+    const startVal = rangeStartDateInput.value;
+    const endVal = rangeEndDateInput.value;
+
+    if (!startVal || !endVal) {
+        if (calcWorkdaysResult) calcWorkdaysResult.textContent = "0";
+        if (calcCalendardaysResult) calcCalendardaysResult.textContent = "0";
+        return;
+    }
+
+    const d1 = new Date(startVal);
+    const d2 = new Date(endVal);
+
+    const diff = calculateDaysDifference(d1, d2);
+
+    if (calcWorkdaysResult) {
+        calcWorkdaysResult.textContent = `${diff.workdays} ngày`;
+    }
+    if (calcCalendardaysResult) {
+        calcCalendardaysResult.textContent = `${diff.calendarDays} ngày`;
+    }
+}
+
+// Initial defaults for quick range calculator: Today -> Next month same day
+const todayObj = new Date();
+const todayFormatted = todayObj.toISOString().split("T")[0];
+const nextMonthObj = new Date();
+nextMonthObj.setMonth(nextMonthObj.getMonth() + 1);
+const nextMonthFormatted = nextMonthObj.toISOString().split("T")[0];
+
+if (rangeStartDateInput) rangeStartDateInput.value = todayFormatted;
+if (rangeEndDateInput) rangeEndDateInput.value = nextMonthFormatted;
+updateQuickRangeCalc();
+
+if (rangeStartDateInput) rangeStartDateInput.addEventListener("change", updateQuickRangeCalc);
+if (rangeEndDateInput) rangeEndDateInput.addEventListener("change", updateQuickRangeCalc);
+
+function loadCounterEventsFromStorage() {
+    try {
+        const stored = localStorage.getItem(COUNTER_STORAGE_KEY);
+        if (stored) {
+            dayCounterEvents = JSON.parse(stored);
+        } else {
+            // Default samples
+            const endOfYear = `${new Date().getFullYear()}-12-31`;
+            dayCounterEvents = [
+                {
+                    id: "event_1",
+                    title: "Kết thúc năm " + new Date().getFullYear(),
+                    targetDate: endOfYear,
+                    mode: "workday"
+                }
+            ];
+            saveCounterEventsToStorage();
+        }
+    } catch (e) {
+        dayCounterEvents = [];
+    }
+    renderCounterEvents();
+}
+
+function saveCounterEventsToStorage() {
+    try {
+        localStorage.setItem(COUNTER_STORAGE_KEY, JSON.stringify(dayCounterEvents));
+    } catch (e) {
+        console.error("Failed to save counter events:", e);
+    }
+}
+
+function renderCounterEvents() {
+    if (!counterGridContainer) return;
+    counterGridContainer.innerHTML = "";
+
+    if (dayCounterEvents.length === 0) {
+        if (counterEmptyState) counterEmptyState.style.display = "block";
+        return;
+    }
+    if (counterEmptyState) counterEmptyState.style.display = "none";
+
+    const today = new Date();
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    dayCounterEvents.forEach(evt => {
+        const target = new Date(evt.targetDate);
+        const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+
+        const diff = calculateDaysDifference(todayMidnight, targetMidnight);
+
+        let statusText = "";
+        let statusClass = "";
+
+        if (targetMidnight > todayMidnight) {
+            statusText = `Còn ${diff.calendarDays} ngày nữa`;
+            statusClass = "future";
+        } else if (targetMidnight < todayMidnight) {
+            statusText = `Đã qua ${diff.calendarDays} ngày`;
+            statusClass = "past";
+        } else {
+            statusText = "Hôm nay là ngày mốc!";
+            statusClass = "today";
+        }
+
+        const card = document.createElement("div");
+        card.className = "counter-card";
+
+        const formattedTargetDate = target.toLocaleDateString("vi-VN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+        });
+
+        card.innerHTML = `
+            <div class="counter-card-header">
+                <div>
+                    <h3 class="counter-card-title">${escapeHtml(evt.title)}</h3>
+                    <div style="font-size: 12px; color: var(--sakura-plum-soft); margin-top: 3px;">
+                        <i class="fa-regular fa-calendar"></i> ${formattedTargetDate}
+                    </div>
+                </div>
+                <span class="counter-card-status-badge ${statusClass}">${statusText}</span>
+            </div>
+
+            <div class="counter-card-stats">
+                <div class="counter-stat-item workday">
+                    <span class="counter-stat-label"><i class="fa-solid fa-briefcase"></i> Ngày đi làm</span>
+                    <span class="counter-stat-val">${diff.workdays}</span>
+                    <span style="font-size: 11px; color: #528e71;">(Bỏ T7 & CN)</span>
+                </div>
+                <div class="counter-stat-item calendar">
+                    <span class="counter-stat-label"><i class="fa-solid fa-calendar-days"></i> Ngày thường</span>
+                    <span class="counter-stat-val">${diff.calendarDays}</span>
+                    <span style="font-size: 11px; color: var(--sakura-plum-soft);">(Tất cả các ngày)</span>
+                </div>
+            </div>
+
+            <div class="counter-card-footer">
+                <span style="font-size: 11.5px; color: var(--sakura-plum-soft);">
+                    <i class="fa-solid fa-tag"></i> Ưu tiên: ${evt.mode === 'workday' ? 'Ngày đi làm' : 'Ngày thường'}
+                </span>
+                <button type="button" class="note-btn delete" title="Xóa sự kiện" data-event-id="${evt.id}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+        `;
+
+        const deleteBtn = card.querySelector(`[data-event-id="${evt.id}"]`);
+        if (deleteBtn) {
+            deleteBtn.addEventListener("click", () => deleteCounterEvent(evt.id));
+        }
+
+        counterGridContainer.appendChild(card);
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text || "";
+    return div.innerHTML;
+}
+
+function deleteCounterEvent(id) {
+    if (!confirm("Bạn có chắc muốn xóa mốc sự kiện này?")) return;
+    dayCounterEvents = dayCounterEvents.filter(e => e.id !== id);
+    saveCounterEventsToStorage();
+    renderCounterEvents();
+}
+
+if (addCounterTargetBtn) {
+    addCounterTargetBtn.addEventListener("click", () => {
+        counterForm.reset();
+        if (counterDateInput) counterDateInput.value = todayFormatted;
+        if (counterEditorCard) {
+            counterEditorCard.style.display = counterEditorCard.style.display === "none" ? "block" : "none";
+        }
+    });
+}
+
+if (counterCancelBtn) {
+    counterCancelBtn.addEventListener("click", () => {
+        if (counterEditorCard) counterEditorCard.style.display = "none";
+    });
+}
+
+if (counterForm) {
+    counterForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const title = counterTitleInput.value.trim();
+        const targetDate = counterDateInput.value;
+        const mode = counterModeSelect.value;
+
+        if (!title || !targetDate) return;
+
+        const newEvt = {
+            id: "counter_" + Date.now(),
+            title: title,
+            targetDate: targetDate,
+            mode: mode
+        };
+
+        dayCounterEvents.unshift(newEvt);
+        saveCounterEventsToStorage();
+        renderCounterEvents();
+
+        counterForm.reset();
+        if (counterEditorCard) counterEditorCard.style.display = "none";
+    });
+}
+
+// Load events on initialize
+loadCounterEventsFromStorage();
+
+
+/* =========================================================
    FLOATING MINI CALCULATOR LOGIC
 ========================================================= */
 const calcToggleBtn = document.getElementById("calc-toggle-btn");
