@@ -1632,6 +1632,8 @@ function saveCounterEventsToStorage() {
     }
 }
 
+let editingCounterEventId = null;
+
 function renderCounterEvents() {
     if (!counterGridContainer) return;
     counterGridContainer.innerHTML = "";
@@ -1703,11 +1705,21 @@ function renderCounterEvents() {
                 <span style="font-size: 11.5px; color: var(--sakura-plum-soft);">
                     <i class="fa-solid fa-tag"></i> Ưu tiên: ${evt.mode === 'workday' ? 'Ngày đi làm' : 'Ngày thường'}
                 </span>
-                <button type="button" class="note-btn delete" title="Xóa sự kiện" data-event-id="${evt.id}">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
+                <div class="note-actions">
+                    <button type="button" class="note-btn edit" title="Chỉnh sửa sự kiện" data-edit-id="${evt.id}">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button type="button" class="note-btn delete" title="Xóa sự kiện" data-event-id="${evt.id}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
             </div>
         `;
+
+        const editBtn = card.querySelector(`[data-edit-id="${evt.id}"]`);
+        if (editBtn) {
+            editBtn.addEventListener("click", () => openEditCounterEvent(evt));
+        }
 
         const deleteBtn = card.querySelector(`[data-event-id="${evt.id}"]`);
         if (deleteBtn) {
@@ -1724,6 +1736,29 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function openEditCounterEvent(evt) {
+    editingCounterEventId = evt.id;
+    if (counterTitleInput) counterTitleInput.value = evt.title;
+    if (counterDateInput) counterDateInput.value = evt.targetDate;
+    if (counterModeSelect) counterModeSelect.value = evt.mode || "workday";
+    if (counterEditorTitle) {
+        counterEditorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa sự kiện đếm ngày';
+    }
+    if (counterEditorCard) {
+        counterEditorCard.style.display = "block";
+        counterTitleInput.focus();
+    }
+}
+
+function closeCounterEditor() {
+    editingCounterEventId = null;
+    if (counterForm) counterForm.reset();
+    if (counterEditorTitle) {
+        counterEditorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
+    }
+    if (counterEditorCard) counterEditorCard.style.display = "none";
+}
+
 function deleteCounterEvent(id) {
     if (!confirm("Bạn có chắc muốn xóa mốc sự kiện này?")) return;
     dayCounterEvents = dayCounterEvents.filter(e => e.id !== id);
@@ -1733,18 +1768,23 @@ function deleteCounterEvent(id) {
 
 if (addCounterTargetBtn) {
     addCounterTargetBtn.addEventListener("click", () => {
+        editingCounterEventId = null;
         counterForm.reset();
         if (counterDateInput) counterDateInput.value = todayFormatted;
+        if (counterEditorTitle) {
+            counterEditorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
+        }
         if (counterEditorCard) {
             counterEditorCard.style.display = counterEditorCard.style.display === "none" ? "block" : "none";
+            if (counterEditorCard.style.display === "block") {
+                counterTitleInput.focus();
+            }
         }
     });
 }
 
 if (counterCancelBtn) {
-    counterCancelBtn.addEventListener("click", () => {
-        if (counterEditorCard) counterEditorCard.style.display = "none";
-    });
+    counterCancelBtn.addEventListener("click", closeCounterEditor);
 }
 
 if (counterForm) {
@@ -1756,19 +1796,31 @@ if (counterForm) {
 
         if (!title || !targetDate) return;
 
-        const newEvt = {
-            id: "counter_" + Date.now(),
-            title: title,
-            targetDate: targetDate,
-            mode: mode
-        };
+        if (editingCounterEventId) {
+            dayCounterEvents = dayCounterEvents.map(evt => {
+                if (evt.id === editingCounterEventId) {
+                    return {
+                        ...evt,
+                        title: title,
+                        targetDate: targetDate,
+                        mode: mode
+                    };
+                }
+                return evt;
+            });
+        } else {
+            const newEvt = {
+                id: "counter_" + Date.now(),
+                title: title,
+                targetDate: targetDate,
+                mode: mode
+            };
+            dayCounterEvents.unshift(newEvt);
+        }
 
-        dayCounterEvents.unshift(newEvt);
         saveCounterEventsToStorage();
         renderCounterEvents();
-
-        counterForm.reset();
-        if (counterEditorCard) counterEditorCard.style.display = "none";
+        closeCounterEditor();
     });
 }
 
