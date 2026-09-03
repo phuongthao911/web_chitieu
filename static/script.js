@@ -4,6 +4,76 @@ let incomeChart = null;
 let trendChart = null;
 let dbCategories = []; // Loaded from API
 
+/* =========================================================
+   CUSTOM POPUP MODAL & TOAST HELPER FUNCTIONS
+========================================================= */
+function showToast(message, type = "success") {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast-item ${type}`;
+
+    let iconHtml = '<i class="fa-solid fa-circle-check"></i>';
+    if (type === "error") iconHtml = '<i class="fa-solid fa-circle-xmark"></i>';
+    else if (type === "info") iconHtml = '<i class="fa-solid fa-circle-info"></i>';
+
+    toast.innerHTML = `
+        ${iconHtml}
+        <div class="toast-content">${message}</div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add("hide");
+        setTimeout(() => toast.remove(), 300);
+    }, 3200);
+}
+
+function showConfirmModal(title, message, confirmText = "Đồng ý", cancelText = "Hủy", iconType = "warning") {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("custom-confirm-modal");
+        const titleEl = document.getElementById("confirm-modal-title");
+        const msgEl = document.getElementById("confirm-modal-message");
+        const okBtn = document.getElementById("confirm-modal-ok");
+        const cancelBtn = document.getElementById("confirm-modal-cancel");
+        const iconEl = document.getElementById("confirm-modal-icon");
+
+        if (!modal) {
+            resolve(confirm(message));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (okBtn) okBtn.innerHTML = `<i class="fa-solid fa-check"></i> ${confirmText}`;
+        if (cancelBtn) cancelBtn.innerHTML = `<i class="fa-solid fa-xmark"></i> ${cancelText}`;
+
+        if (iconEl) {
+            iconEl.className = `custom-modal-icon ${iconType}`;
+            if (iconType === "warning") iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            else if (iconType === "info") iconEl.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            else if (iconType === "success") iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        }
+
+        modal.style.display = "flex";
+
+        function cleanup(result) {
+            modal.style.display = "none";
+            okBtn.removeEventListener("click", onOk);
+            cancelBtn.removeEventListener("click", onCancel);
+            resolve(result);
+        }
+
+        function onOk() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+    });
+}
+
 const form = document.getElementById("transaction-form");
 const amountInput = document.getElementById("amount");
 const typeInput = document.getElementById("type");
@@ -600,14 +670,26 @@ function exitCategoryEditMode() {
 }
 
 async function deleteCategory(id) {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-    const response = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        alert(error.detail || "Failed to delete category.");
-        return;
+    const confirmed = await showConfirmModal(
+        "Xóa danh mục",
+        "Bạn có chắc chắn muốn xóa danh mục này?",
+        "Xác nhận xóa",
+        "Hủy",
+        "warning"
+    );
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || "Không thể xóa danh mục.");
+        }
+        await loadCategories();
+        showToast("Đã xóa danh mục thành công!", "success");
+    } catch (err) {
+        showToast(err.message, "error");
     }
-    await loadCategories();
 }
 
 async function createTransaction(payload) {
@@ -686,17 +768,31 @@ function exitEditMode() {
 }
 
 async function deleteTransaction(id) {
-    const response = await fetch(`/api/transactions/${id}`, {
-        method: "DELETE"
-    });
+    const confirmed = await showConfirmModal(
+        "Xóa giao dịch",
+        "Bạn có chắc chắn muốn xóa giao dịch này không?",
+        "Xác nhận xóa",
+        "Hủy",
+        "warning"
+    );
+    if (!confirmed) return;
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.detail || "Failed to delete transaction.");
+    try {
+        const response = await fetch(`/api/transactions/${id}`, {
+            method: "DELETE"
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || "Không thể xóa giao dịch.");
+        }
+
+        transactions = transactions.filter(transaction => transaction.id !== id);
+        renderTable();
+        showToast("Đã xóa giao dịch thành công!", "success");
+    } catch (error) {
+        showToast(error.message, "error");
     }
-
-    transactions = transactions.filter(transaction => transaction.id !== id);
-    renderTable();
 }
 
 form.addEventListener("submit", async event => {
@@ -984,10 +1080,26 @@ function renderRecurringList(items) {
         deleteBtn.className = "delete-btn";
         deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         deleteBtn.addEventListener("click", async () => {
-            if (!confirm("Xóa cấu hình định kỳ này?")) return;
-            const res = await fetch(`/api/recurring/${r.id}`, { method: "DELETE" });
-            if (res.ok) {
-                loadRecurring();
+            const confirmed = await showConfirmModal(
+                "Xóa cấu hình định kỳ",
+                "Bạn có chắc chắn muốn xóa cấu hình giao dịch định kỳ này?",
+                "Xác nhận xóa",
+                "Hủy",
+                "warning"
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/recurring/${r.id}`, { method: "DELETE" });
+                if (res.ok) {
+                    await loadRecurring();
+                    showToast("Đã xóa cấu hình định kỳ thành công!", "success");
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || "Không thể xóa cấu hình định kỳ.");
+                }
+            } catch (err) {
+                showToast(err.message, "error");
             }
         });
         actionCell.appendChild(deleteBtn);
@@ -1440,11 +1552,20 @@ function togglePinNote(id) {
     renderNotes();
 }
 
-function deleteNote(id) {
-    if (!confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) return;
+async function deleteNote(id) {
+    const confirmed = await showConfirmModal(
+        "Xóa ghi chú",
+        "Bạn có chắc chắn muốn xóa thẻ ghi chú này không?",
+        "Xác nhận xóa",
+        "Hủy",
+        "warning"
+    );
+    if (!confirmed) return;
+
     userNotes = userNotes.filter(n => n.id !== id);
     saveNotesToStorage();
     renderNotes();
+    showToast("Đã xóa ghi chú thành công!", "success");
 }
 
 if (addNoteBtn) {
@@ -1464,7 +1585,7 @@ if (noteForm) {
         const pinned = notePinnedInput.checked;
 
         if (!title || !contentHtml || contentHtml === "<br>") {
-            alert("Vui lòng nhập cả tiêu đề và nội dung ghi chú.");
+            showToast("Vui lòng nhập cả tiêu đề và nội dung ghi chú.", "error");
             return;
         }
 
@@ -1484,6 +1605,7 @@ if (noteForm) {
                 }
                 return n;
             });
+            showToast("Đã cập nhật ghi chú thành công!", "success");
         } else {
             const newNote = {
                 id: "note_" + Date.now(),
@@ -1494,6 +1616,7 @@ if (noteForm) {
                 updatedAt: dateStr
             };
             userNotes.unshift(newNote);
+            showToast("Đã tạo ghi chú mới thành công!", "success");
         }
 
         saveNotesToStorage();
@@ -1738,46 +1861,74 @@ function escapeHtml(text) {
 
 function openEditCounterEvent(evt) {
     editingCounterEventId = evt.id;
-    if (counterTitleInput) counterTitleInput.value = evt.title;
-    if (counterDateInput) counterDateInput.value = evt.targetDate;
-    if (counterModeSelect) counterModeSelect.value = evt.mode || "workday";
-    if (counterEditorTitle) {
-        counterEditorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa sự kiện đếm ngày';
+    const cardEl = document.getElementById("counter-editor-card");
+    const titleIn = document.getElementById("counter-title-input");
+    const dateIn = document.getElementById("counter-date-input");
+    const modeSel = document.getElementById("counter-mode-select");
+    const editorTitle = document.getElementById("counter-editor-title");
+
+    if (titleIn) titleIn.value = evt.title;
+    if (dateIn) dateIn.value = evt.targetDate;
+    if (modeSel) modeSel.value = evt.mode || "workday";
+    if (editorTitle) {
+        editorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa sự kiện đếm ngày';
     }
-    if (counterEditorCard) {
-        counterEditorCard.style.display = "block";
-        counterTitleInput.focus();
+    if (cardEl) {
+        cardEl.style.display = "block";
+        cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (titleIn) titleIn.focus();
     }
 }
 
 function closeCounterEditor() {
     editingCounterEventId = null;
-    if (counterForm) counterForm.reset();
-    if (counterEditorTitle) {
-        counterEditorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
+    const formEl = document.getElementById("counter-form");
+    const editorTitle = document.getElementById("counter-editor-title");
+    const cardEl = document.getElementById("counter-editor-card");
+
+    if (formEl) formEl.reset();
+    if (editorTitle) {
+        editorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
     }
-    if (counterEditorCard) counterEditorCard.style.display = "none";
+    if (cardEl) cardEl.style.display = "none";
 }
 
-function deleteCounterEvent(id) {
-    if (!confirm("Bạn có chắc muốn xóa mốc sự kiện này?")) return;
+async function deleteCounterEvent(id) {
+    const confirmed = await showConfirmModal(
+        "Xóa mốc sự kiện",
+        "Bạn có chắc chắn muốn xóa mốc sự kiện đếm ngày này?",
+        "Xác nhận xóa",
+        "Hủy",
+        "warning"
+    );
+    if (!confirmed) return;
+
     dayCounterEvents = dayCounterEvents.filter(e => e.id !== id);
     saveCounterEventsToStorage();
     renderCounterEvents();
+    showToast("Đã xóa mốc sự kiện thành công!", "success");
 }
 
 if (addCounterTargetBtn) {
     addCounterTargetBtn.addEventListener("click", () => {
         editingCounterEventId = null;
-        counterForm.reset();
-        if (counterDateInput) counterDateInput.value = todayFormatted;
-        if (counterEditorTitle) {
-            counterEditorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
+        const formEl = document.getElementById("counter-form");
+        const dateIn = document.getElementById("counter-date-input");
+        const editorTitle = document.getElementById("counter-editor-title");
+        const cardEl = document.getElementById("counter-editor-card");
+        const titleIn = document.getElementById("counter-title-input");
+
+        if (formEl) formEl.reset();
+        if (dateIn) dateIn.value = todayFormatted;
+        if (editorTitle) {
+            editorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
         }
-        if (counterEditorCard) {
-            counterEditorCard.style.display = counterEditorCard.style.display === "none" ? "block" : "none";
-            if (counterEditorCard.style.display === "block") {
-                counterTitleInput.focus();
+        if (cardEl) {
+            const isHidden = cardEl.style.display === "none" || cardEl.style.display === "";
+            cardEl.style.display = isHidden ? "block" : "none";
+            if (isHidden) {
+                cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                if (titleIn) titleIn.focus();
             }
         }
     });
@@ -1790,11 +1941,18 @@ if (counterCancelBtn) {
 if (counterForm) {
     counterForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        const title = counterTitleInput.value.trim();
-        const targetDate = counterDateInput.value;
-        const mode = counterModeSelect.value;
+        const titleIn = document.getElementById("counter-title-input");
+        const dateIn = document.getElementById("counter-date-input");
+        const modeSel = document.getElementById("counter-mode-select");
 
-        if (!title || !targetDate) return;
+        const title = titleIn ? titleIn.value.trim() : "";
+        const targetDate = dateIn ? dateIn.value : "";
+        const mode = modeSel ? modeSel.value : "workday";
+
+        if (!title || !targetDate) {
+            showToast("Vui lòng điền đầy đủ tên và ngày mốc sự kiện.", "error");
+            return;
+        }
 
         if (editingCounterEventId) {
             dayCounterEvents = dayCounterEvents.map(evt => {
@@ -1808,6 +1966,7 @@ if (counterForm) {
                 }
                 return evt;
             });
+            showToast("Cập nhật mốc sự kiện thành công!", "success");
         } else {
             const newEvt = {
                 id: "counter_" + Date.now(),
@@ -1816,6 +1975,7 @@ if (counterForm) {
                 mode: mode
             };
             dayCounterEvents.unshift(newEvt);
+            showToast("Thêm mốc sự kiện mới thành công!", "success");
         }
 
         saveCounterEventsToStorage();

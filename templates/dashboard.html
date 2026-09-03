@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Expense Tracker</title>
 
-    <link rel="stylesheet" href="/static/style.css?v=2.5">
+    <link rel="stylesheet" href="/static/style.css?v=2.6">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -722,7 +722,29 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=2.5"></script>
+    <!-- Custom Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Custom Sakura Confirmation Modal (Popup) -->
+    <div id="custom-confirm-modal" class="custom-modal-backdrop" style="display: none;">
+        <div class="custom-modal-card">
+            <div class="custom-modal-icon warning" id="confirm-modal-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="custom-modal-title" id="confirm-modal-title">Xác nhận hành động</h3>
+            <p class="custom-modal-message" id="confirm-modal-message">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+            <div class="custom-modal-actions">
+                <button type="button" class="modal-cancel-btn" id="confirm-modal-cancel">
+                    <i class="fa-solid fa-xmark"></i> Hủy
+                </button>
+                <button type="button" class="modal-confirm-btn" id="confirm-modal-ok">
+                    <i class="fa-solid fa-check"></i> Đồng ý
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=2.6"></script>
 
 </body>
 
