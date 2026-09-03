@@ -1621,15 +1621,10 @@ if (calcCloseBtn && miniCalcCard) {
     });
 }
 
-if (calcMinimizeBtn && miniCalcCard) {
-    calcMinimizeBtn.addEventListener("click", () => {
-        miniCalcCard.classList.remove("show");
-    });
-}
-
-// Calculator keypad click events
-document.querySelectorAll(".calc-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+// Calculator keypad click events (Supports both .c-key and .calc-btn)
+document.querySelectorAll(".c-key, .calc-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+        e.preventDefault();
         const num = btn.getAttribute("data-num");
         const action = btn.getAttribute("data-action");
 

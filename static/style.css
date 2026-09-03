@@ -1652,6 +1652,7 @@ button i {
 
 /* =========================================================
    FLOATING MINI CALCULATOR WIDGET (Bottom-Right)
+   Realistic Mechanical Style — Sakura Aesthetic
 ========================================================= */
 .floating-calc-wrapper {
     position: fixed;
@@ -1663,50 +1664,52 @@ button i {
     align-items: flex-end;
 }
 
-/* Toggle Circle Button */
+/* Toggle Floating Action Button */
 .calc-toggle-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
-    color: var(--sakura-white);
-    border: 2px solid var(--sakura-white);
-    box-shadow: 0 6px 18px rgba(232, 92, 133, 0.38);
+    width: 54px;
+    height: 54px;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep)) !important;
+    color: var(--sakura-white) !important;
+    border: 2px solid var(--sakura-white) !important;
+    box-shadow: 0 6px 20px rgba(232, 92, 133, 0.42) !important;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
     outline: none;
+    padding: 0 !important;
+    flex: none !important;
 }
 
 .calc-toggle-btn:hover {
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 8px 24px rgba(232, 92, 133, 0.48);
+    transform: scale(1.08) !important;
+    box-shadow: 0 8px 24px rgba(232, 92, 133, 0.52) !important;
 }
 
 .calc-toggle-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.95) !important;
 }
 
 .calc-badge-tooltip {
     position: absolute;
-    right: calc(100% + 10px);
+    right: calc(100% + 12px);
     top: 50%;
     transform: translateY(-50%);
     background: var(--sakura-plum);
     color: var(--sakura-white);
     font-size: 12px;
-    font-weight: 600;
-    padding: 4px 10px;
+    font-weight: 700;
+    padding: 5px 12px;
     border-radius: 8px;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s, transform 0.2s;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
 }
 
 .calc-badge-tooltip::after {
@@ -1725,19 +1728,20 @@ button i {
     transform: translateY(-50%) translateX(-4px);
 }
 
-/* Calculator Card Modal / Box */
+/* Calculator Body / Box */
 .mini-calculator-card {
     display: none;
     position: absolute;
-    bottom: 64px;
+    bottom: 68px;
     right: 0;
-    width: 290px;
-    background: var(--sakura-white);
-    border-radius: var(--radius-md);
-    border: 1px solid #ffd0df;
-    box-shadow: 0 12px 36px rgba(110, 58, 80, 0.22);
-    overflow: hidden;
+    width: 280px;
+    background: #fff8fa;
+    border-radius: 20px;
+    border: 2px solid #ffd3e0;
+    box-shadow: 0 16px 36px rgba(110, 58, 80, 0.22), 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 16px 14px 14px;
     animation: popupScale 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    user-select: none;
 }
 
 .mini-calculator-card.show {
@@ -1755,13 +1759,13 @@ button i {
     }
 }
 
+/* Calculator Top Bar */
 .calc-header {
-    background: linear-gradient(135deg, var(--sakura-pale), #ffe0ec);
-    padding: 10px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #ffccd9;
+    margin-bottom: 12px;
+    padding: 0 2px;
 }
 
 .calc-title {
@@ -1778,130 +1782,204 @@ button i {
     font-size: 14px;
 }
 
-.calc-header-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.calc-header-actions button {
-    background: transparent;
-    border: none;
-    color: var(--sakura-plum-soft);
-    font-size: 12px;
+.calc-close-btn {
+    background: transparent !important;
+    border: none !important;
+    color: var(--sakura-plum-soft) !important;
+    font-size: 14px;
     cursor: pointer;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    display: flex;
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 50% !important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    padding: 0 !important;
+    flex: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
 }
 
-.calc-header-actions button:hover {
-    background: rgba(232, 92, 133, 0.15);
-    color: var(--sakura-deep);
+.calc-close-btn:hover {
+    background: #ffe3ec !important;
+    color: var(--sakura-deep) !important;
+    transform: none !important;
 }
 
-/* Calculator Screen */
-.calc-screen {
-    background: #fff8fa;
-    padding: 12px 16px;
+/* Calculator Screen (Beveled / LCD Box) */
+.calc-screen-box {
+    background: #ffffff;
+    border: 1.5px solid #ffccd9;
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    box-shadow: inset 0 2px 4px rgba(110, 58, 80, 0.06);
     text-align: right;
-    border-bottom: 1px solid #ffebf1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 64px;
 }
 
-.calc-history {
-    min-height: 18px;
+.calc-history-line {
     font-size: 12px;
     color: var(--sakura-plum-soft);
+    min-height: 16px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin-bottom: 2px;
 }
 
-.calc-display {
-    font-size: 24px;
+.calc-result-line {
+    font-size: 26px;
     font-weight: 700;
     color: var(--sakura-plum);
     letter-spacing: 0.5px;
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
+    line-height: 1.2;
 }
 
-.calc-display::-webkit-scrollbar {
+.calc-result-line::-webkit-scrollbar {
     display: none;
 }
 
-/* Calculator Keypad */
-.calc-keypad {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    padding: 12px;
-    background: var(--sakura-white);
+/* Keypad Grid (Standard 4 Columns) */
+.calc-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
 }
 
-.calc-btn {
-    border: 1px solid #ffe1eb;
-    background: #fffbfa;
-    border-radius: var(--radius-sm);
-    color: var(--sakura-plum);
-    font-size: 15px;
-    font-weight: 600;
-    height: 42px;
+/* Individual Keys / Buttons */
+.c-key {
+    height: 46px !important;
+    border-radius: 10px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
     cursor: pointer;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    padding: 0 !important;
+    flex: none !important;
+    outline: none;
     user-select: none;
+    transition: all 0.12s ease !important;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08) !important;
 }
 
-.calc-btn:hover {
-    background: var(--sakura-pale);
-    border-color: var(--sakura-pink);
-    transform: translateY(-1px);
+.c-key:hover {
+    transform: translateY(-1px) !important;
 }
 
-.calc-btn:active {
-    transform: translateY(1px) scale(0.97);
+.c-key:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08) !important;
 }
 
-.calc-btn.btn-func {
-    background: #fff0f5;
-    color: var(--sakura-rose);
-    font-weight: 700;
+/* Number Keys (White/Light button with clear contrast) */
+.c-key.key-num {
+    background: #ffffff !important;
+    color: var(--sakura-plum) !important;
+    border: 1px solid #ffdbe4 !important;
+    box-shadow: 0 3px 0 #ffd1dc !important;
 }
 
-.calc-btn.btn-func:hover {
-    background: #ffe3ee;
+.c-key.key-num:hover {
+    background: #fff2f6 !important;
+    border-color: #ffb8cd !important;
 }
 
-.calc-btn.btn-op {
-    background: linear-gradient(135deg, #fff2f6, #ffe6ee);
-    color: var(--sakura-deep);
-    font-size: 17px;
-    font-weight: 700;
+.c-key.key-num:active {
+    box-shadow: 0 1px 0 #ffd1dc !important;
 }
 
-.calc-btn.btn-op:hover {
-    background: linear-gradient(135deg, #ffe2ec, #ffd4e2);
+/* Operator Keys (+, -, ×, ÷) - High Contrast Dark Plum/Rose */
+.c-key.key-op {
+    background: linear-gradient(180deg, #7c455c, #5e3144) !important;
+    color: #ffffff !important;
+    border: 1px solid #522a3b !important;
+    box-shadow: 0 3px 0 #3d1c2b !important;
+    font-size: 20px !important;
 }
 
-.calc-btn.btn-equals {
-    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
-    color: var(--sakura-white);
-    border-color: transparent;
-    font-weight: 700;
-    font-size: 18px;
-    box-shadow: 0 3px 8px rgba(232, 92, 133, 0.3);
+.c-key.key-op:hover {
+    background: linear-gradient(180deg, #8c4f69, #6c384e) !important;
 }
 
-.calc-btn.btn-equals:hover {
-    background: linear-gradient(135deg, var(--sakura-deep), #d84570);
-    box-shadow: 0 4px 12px rgba(232, 92, 133, 0.4);
+.c-key.key-op:active {
+    box-shadow: 0 1px 0 #3d1c2b !important;
+}
+
+/* Clear Key (C) - Warning Coral Red/Rose */
+.c-key.key-clear {
+    background: linear-gradient(180deg, #eb586f, #d73852) !important;
+    color: #ffffff !important;
+    border: 1px solid #c22942 !important;
+    box-shadow: 0 3px 0 #9e1d32 !important;
+}
+
+.c-key.key-clear:hover {
+    background: linear-gradient(180deg, #f5687e, #e2435d) !important;
+}
+
+.c-key.key-clear:active {
+    box-shadow: 0 1px 0 #9e1d32 !important;
+}
+
+/* Backspace Key */
+.c-key.key-backspace {
+    background: linear-gradient(180deg, #f77085, #e04a63) !important;
+    color: #ffffff !important;
+    border: 1px solid #cc3851 !important;
+    box-shadow: 0 3px 0 #aa263c !important;
+    font-size: 15px !important;
+}
+
+.c-key.key-backspace:hover {
+    background: linear-gradient(180deg, #fa8094, #eb566f) !important;
+}
+
+.c-key.key-backspace:active {
+    box-shadow: 0 1px 0 #aa263c !important;
+}
+
+/* Percent Key (%) */
+.c-key.key-func {
+    background: #fdf0f4 !important;
+    color: var(--sakura-deep) !important;
+    border: 1px solid #ffd2df !important;
+    box-shadow: 0 3px 0 #fcc2d3 !important;
+    font-size: 16px !important;
+}
+
+.c-key.key-func:hover {
+    background: #ffe3ed !important;
+}
+
+.c-key.key-func:active {
+    box-shadow: 0 1px 0 #fcc2d3 !important;
+}
+
+/* Equal Key (=) - Highlight Blue/Rose Accent (Span 2 columns) */
+.c-key.key-equal {
+    grid-column: span 2 !important;
+    background: linear-gradient(180deg, var(--sakura-rose), var(--sakura-deep)) !important;
+    color: #ffffff !important;
+    border: 1px solid #c8406a !important;
+    box-shadow: 0 3px 0 #ab2c53 !important;
+    font-size: 22px !important;
+}
+
+.c-key.key-equal:hover {
+    background: linear-gradient(180deg, #f789ab, #ec4d79) !important;
+}
+
+.c-key.key-equal:active {
+    box-shadow: 0 1px 0 #ab2c53 !important;
 }
 
 @media (max-width: 480px) {
@@ -1911,8 +1989,14 @@ button i {
     }
 
     .mini-calculator-card {
-        width: 270px;
-        bottom: 60px;
+        width: 260px;
+        bottom: 64px;
         right: 0;
+        padding: 12px 10px 10px;
+    }
+
+    .c-key {
+        height: 42px !important;
+        font-size: 16px !important;
     }
 }

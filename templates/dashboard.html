@@ -529,7 +529,7 @@
     <div class="floating-calc-wrapper" id="floating-calc-wrapper">
         <button type="button" class="calc-toggle-btn" id="calc-toggle-btn" title="Mở máy tính tính nhanh" aria-label="Calculator">
             <i class="fa-solid fa-calculator"></i>
-            <span class="calc-badge-tooltip">Tính nhanh</span>
+            <span class="calc-badge-tooltip">Máy tính</span>
         </button>
 
         <div class="mini-calculator-card" id="mini-calculator-card">
@@ -539,50 +539,51 @@
                     <span>Máy tính</span>
                 </div>
                 <div class="calc-header-actions">
-                    <button type="button" id="calc-minimize-btn" title="Thu nhỏ" aria-label="Minimize calculator">
-                        <i class="fa-solid fa-minus"></i>
-                    </button>
-                    <button type="button" id="calc-close-btn" title="Đóng" aria-label="Close calculator">
+                    <button type="button" id="calc-close-btn" class="calc-close-btn" title="Đóng" aria-label="Close calculator">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
             </div>
             
-            <div class="calc-screen">
-                <div class="calc-history" id="calc-history"></div>
-                <div class="calc-display" id="calc-display">0</div>
+            <div class="calc-screen-box">
+                <div class="calc-history-line" id="calc-history"></div>
+                <div class="calc-result-line" id="calc-display">0</div>
             </div>
 
-            <div class="calc-keypad">
-                <button type="button" class="calc-btn btn-func" data-action="clear">AC</button>
-                <button type="button" class="calc-btn btn-func" data-action="backspace"><i class="fa-solid fa-delete-left"></i></button>
-                <button type="button" class="calc-btn btn-func" data-action="percent">%</button>
-                <button type="button" class="calc-btn btn-op" data-action="divide">÷</button>
+            <div class="calc-grid">
+                <!-- Row 1: Clear, Backspace, %, Divide -->
+                <button type="button" class="c-key key-clear" data-action="clear">C</button>
+                <button type="button" class="c-key key-backspace" data-action="backspace" title="Xóa một số"><i class="fa-solid fa-arrow-left-long"></i></button>
+                <button type="button" class="c-key key-func" data-action="percent">%</button>
+                <button type="button" class="c-key key-op" data-action="divide">÷</button>
 
-                <button type="button" class="calc-btn" data-num="7">7</button>
-                <button type="button" class="calc-btn" data-num="8">8</button>
-                <button type="button" class="calc-btn" data-num="9">9</button>
-                <button type="button" class="calc-btn btn-op" data-action="multiply">×</button>
+                <!-- Row 2: 7, 8, 9, Multiply -->
+                <button type="button" class="c-key key-num" data-num="7">7</button>
+                <button type="button" class="c-key key-num" data-num="8">8</button>
+                <button type="button" class="c-key key-num" data-num="9">9</button>
+                <button type="button" class="c-key key-op" data-action="multiply">×</button>
 
-                <button type="button" class="calc-btn" data-num="4">4</button>
-                <button type="button" class="calc-btn" data-num="5">5</button>
-                <button type="button" class="calc-btn" data-num="6">6</button>
-                <button type="button" class="calc-btn btn-op" data-action="subtract">−</button>
+                <!-- Row 3: 4, 5, 6, Subtract -->
+                <button type="button" class="c-key key-num" data-num="4">4</button>
+                <button type="button" class="c-key key-num" data-num="5">5</button>
+                <button type="button" class="c-key key-num" data-num="6">6</button>
+                <button type="button" class="c-key key-op" data-action="subtract">−</button>
 
-                <button type="button" class="calc-btn" data-num="1">1</button>
-                <button type="button" class="calc-btn" data-num="2">2</button>
-                <button type="button" class="calc-btn" data-num="3">3</button>
-                <button type="button" class="calc-btn btn-op" data-action="add">+</button>
+                <!-- Row 4: 1, 2, 3, Add -->
+                <button type="button" class="c-key key-num" data-num="1">1</button>
+                <button type="button" class="c-key key-num" data-num="2">2</button>
+                <button type="button" class="c-key key-num" data-num="3">3</button>
+                <button type="button" class="c-key key-op" data-action="add">+</button>
 
-                <button type="button" class="calc-btn btn-zero" data-num="0">0</button>
-                <button type="button" class="calc-btn" data-num="000">000</button>
-                <button type="button" class="calc-btn" data-action="decimal">.</button>
-                <button type="button" class="calc-btn btn-equals" data-action="calculate">=</button>
+                <!-- Row 5: 0, Decimal, Equals (span 2) -->
+                <button type="button" class="c-key key-num" data-num="0">0</button>
+                <button type="button" class="c-key key-num" data-action="decimal">.</button>
+                <button type="button" class="c-key key-equal" data-action="calculate">=</button>
             </div>
         </div>
     </div>
 
-    <script src="/static/script.js?v=1.8"></script>
+    <script src="/static/script.js?v=2.0"></script>
 
 </body>
 
