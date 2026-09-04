@@ -1324,9 +1324,8 @@ if (importCsvInput) {
 }
 
 /* =========================================================
-   NOTES MANAGEMENT LOGIC (LocalStorage persistent)
+   NOTES MANAGEMENT LOGIC (Backend API DB persistent)
 ========================================================= */
-const NOTES_STORAGE_KEY = "expense_tracker_user_notes";
 let userNotes = [];
 let editingNoteId = null;
 
@@ -1375,45 +1374,20 @@ if (noteTextColorInput) {
     });
 }
 
-function loadNotesFromStorage() {
+async function loadNotesFromApi() {
     try {
-        const stored = localStorage.getItem(NOTES_STORAGE_KEY);
-        if (stored) {
-            userNotes = JSON.parse(stored);
+        const res = await fetch("/api/notes");
+        if (res.ok) {
+            userNotes = await res.json();
         } else {
-            // Default sample notes with rich HTML
-            userNotes = [
-                {
-                    id: "note_1",
-                    title: "Kế hoạch tiết kiệm tháng này",
-                    contentHtml: "<p><strong>Mục tiêu:</strong> Dành ra ít nhất <u>20% thu nhập</u> chuyển vào Ví tiết kiệm đầu tháng ngay sau khi nhận lương.</p><ul><li>Hạn chế ăn ngoài quá 3 lần/tuần</li><li>Ghi chép chi tiêu mỗi ngày</li></ul>",
-                    color: "pink",
-                    pinned: true,
-                    updatedAt: new Date().toLocaleDateString("vi-VN")
-                },
-                {
-                    id: "note_2",
-                    title: "Danh sách đồ cần mua sắp tới",
-                    contentHtml: "<ol><li>Thay dầu xe máy định kỳ</li><li>Mua sắm nhu yếu phẩm siêu thị cuối tuần</li><li>Kiểm tra gia hạn gói Internet</li></ol>",
-                    color: "gold",
-                    pinned: false,
-                    updatedAt: new Date().toLocaleDateString("vi-VN")
-                }
-            ];
-            saveNotesToStorage();
+            console.error("Failed to load notes from API");
+            userNotes = [];
         }
     } catch (e) {
+        console.error("Error loading notes:", e);
         userNotes = [];
     }
     renderNotes();
-}
-
-function saveNotesToStorage() {
-    try {
-        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(userNotes));
-    } catch (e) {
-        console.error("Failed to save notes:", e);
-    }
 }
 
 function renderNotes() {
@@ -1428,7 +1402,7 @@ function renderNotes() {
 
     // Sort: pinned notes first, then latest
     const sorted = [...userNotes].sort((a, b) => {
-        if (a.pinned === b.pinned) return 0;
+        if (a.pinned === b.pinned) return (b.id || 0) - (a.id || 0);
         return a.pinned ? -1 : 1;
     });
 
@@ -1453,7 +1427,9 @@ function renderNotes() {
         const body = document.createElement("div");
         body.className = "note-card-body";
         // Render rich HTML content preserving formatting, fonts, colors, lists
-        if (note.contentHtml) {
+        if (note.content_html) {
+            body.innerHTML = note.content_html;
+        } else if (note.contentHtml) {
             body.innerHTML = note.contentHtml;
         } else if (note.content) {
             // Legacy plain text fallback
@@ -1464,7 +1440,7 @@ function renderNotes() {
         footer.className = "note-card-footer";
 
         const dateSpan = document.createElement("span");
-        dateSpan.textContent = note.updatedAt || "Hôm nay";
+        dateSpan.textContent = note.updated_at || note.updatedAt || "Hôm nay";
 
         const actions = document.createElement("div");
         actions.className = "note-actions";
@@ -1475,7 +1451,7 @@ function renderNotes() {
         pinBtn.className = `note-btn pin ${note.pinned ? 'active' : ''}`;
         pinBtn.title = note.pinned ? "Bỏ ghim" : "Ghim lên đầu";
         pinBtn.innerHTML = `<i class="fa-${note.pinned ? 'solid' : 'regular'} fa-thumbtack"></i>`;
-        pinBtn.addEventListener("click", () => togglePinNote(note.id));
+        pinBtn.addEventListener("click", () => togglePinNote(note.id, !note.pinned));
 
         // Edit button
         const editBtn = document.createElement("button");
@@ -1524,7 +1500,7 @@ function openEditNote(note) {
     editingNoteId = note.id;
     noteTitleInput.value = note.title;
     if (noteRichEditor) {
-        noteRichEditor.innerHTML = note.contentHtml || (note.content ? note.content.replace(/\n/g, "<br>") : "");
+        noteRichEditor.innerHTML = note.content_html || note.contentHtml || (note.content ? note.content.replace(/\n/g, "<br>") : "");
     }
     const colorRadio = document.querySelector(`input[name="note-color"][value="${note.color || 'pink'}"]`);
     if (colorRadio) colorRadio.checked = true;
@@ -1541,15 +1517,21 @@ function closeNoteEditor() {
     noteEditorCard.style.display = "none";
 }
 
-function togglePinNote(id) {
-    userNotes = userNotes.map(n => {
-        if (n.id === id) {
-            return { ...n, pinned: !n.pinned };
+async function togglePinNote(id, newPinnedState) {
+    try {
+        const res = await fetch(`/api/notes/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pinned: newPinnedState })
+        });
+        if (res.ok) {
+            await loadNotesFromApi();
+        } else {
+            showToast("Không thể cập nhật ghim ghi chú.", "error");
         }
-        return n;
-    });
-    saveNotesToStorage();
-    renderNotes();
+    } catch (e) {
+        showToast("Lỗi kết nối khi cập nhật ghi chú.", "error");
+    }
 }
 
 async function deleteNote(id) {
@@ -1562,10 +1544,17 @@ async function deleteNote(id) {
     );
     if (!confirmed) return;
 
-    userNotes = userNotes.filter(n => n.id !== id);
-    saveNotesToStorage();
-    renderNotes();
-    showToast("Đã xóa ghi chú thành công!", "success");
+    try {
+        const res = await fetch(`/api/notes/${id}`, { method: "DELETE" });
+        if (res.ok) {
+            await loadNotesFromApi();
+            showToast("Đã xóa ghi chú thành công!", "success");
+        } else {
+            showToast("Không thể xóa ghi chú.", "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối khi xóa ghi chú.", "error");
+    }
 }
 
 if (addNoteBtn) {
@@ -1577,61 +1566,72 @@ if (noteCancelBtn) {
 }
 
 if (noteForm) {
-    noteForm.addEventListener("submit", (e) => {
+    noteForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const title = noteTitleInput.value.trim();
-        const contentHtml = noteRichEditor ? noteRichEditor.innerHTML.trim() : "";
+        const content_html = noteRichEditor ? noteRichEditor.innerHTML.trim() : "";
         const selectedColor = document.querySelector('input[name="note-color"]:checked')?.value || "pink";
         const pinned = notePinnedInput.checked;
 
-        if (!title || !contentHtml || contentHtml === "<br>") {
+        if (!title || !content_html || content_html === "<br>") {
             showToast("Vui lòng nhập cả tiêu đề và nội dung ghi chú.", "error");
             return;
         }
 
         const dateStr = new Date().toLocaleDateString("vi-VN");
 
-        if (editingNoteId) {
-            userNotes = userNotes.map(n => {
-                if (n.id === editingNoteId) {
-                    return {
-                        ...n,
+        try {
+            if (editingNoteId) {
+                const res = await fetch(`/api/notes/${editingNoteId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
                         title,
-                        contentHtml,
+                        content_html,
                         color: selectedColor,
                         pinned,
-                        updatedAt: dateStr
-                    };
+                        updated_at: dateStr
+                    })
+                });
+                if (res.ok) {
+                    showToast("Đã cập nhật ghi chú thành công!", "success");
+                    await loadNotesFromApi();
+                    closeNoteEditor();
+                } else {
+                    showToast("Không thể cập nhật ghi chú.", "error");
                 }
-                return n;
-            });
-            showToast("Đã cập nhật ghi chú thành công!", "success");
-        } else {
-            const newNote = {
-                id: "note_" + Date.now(),
-                title,
-                contentHtml,
-                color: selectedColor,
-                pinned,
-                updatedAt: dateStr
-            };
-            userNotes.unshift(newNote);
-            showToast("Đã tạo ghi chú mới thành công!", "success");
+            } else {
+                const res = await fetch("/api/notes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title,
+                        content_html,
+                        color: selectedColor,
+                        pinned,
+                        updated_at: dateStr
+                    })
+                });
+                if (res.ok) {
+                    showToast("Đã tạo ghi chú mới thành công!", "success");
+                    await loadNotesFromApi();
+                    closeNoteEditor();
+                } else {
+                    showToast("Không thể tạo ghi chú.", "error");
+                }
+            }
+        } catch (e) {
+            showToast("Lỗi kết nối máy chủ.", "error");
         }
-
-        saveNotesToStorage();
-        renderNotes();
-        closeNoteEditor();
     });
 }
 
 // Initialize Notes on page load
-loadNotesFromStorage();
+loadNotesFromApi();
 
 /* =========================================================
-   DAY COUNTER LOGIC (Đếm ngày: Ngày đi làm vs Ngày thường)
+   DAY COUNTER LOGIC (Đếm ngày: Backend API DB persistent)
 ========================================================= */
-const COUNTER_STORAGE_KEY = "expense_tracker_day_counters";
 let dayCounterEvents = [];
 
 const rangeStartDateInput = document.getElementById("range-start-date");
@@ -1723,36 +1723,20 @@ updateQuickRangeCalc();
 if (rangeStartDateInput) rangeStartDateInput.addEventListener("change", updateQuickRangeCalc);
 if (rangeEndDateInput) rangeEndDateInput.addEventListener("change", updateQuickRangeCalc);
 
-function loadCounterEventsFromStorage() {
+async function loadCounterEventsFromApi() {
     try {
-        const stored = localStorage.getItem(COUNTER_STORAGE_KEY);
-        if (stored) {
-            dayCounterEvents = JSON.parse(stored);
+        const res = await fetch("/api/counters");
+        if (res.ok) {
+            dayCounterEvents = await res.json();
         } else {
-            // Default samples
-            const endOfYear = `${new Date().getFullYear()}-12-31`;
-            dayCounterEvents = [
-                {
-                    id: "event_1",
-                    title: "Kết thúc năm " + new Date().getFullYear(),
-                    targetDate: endOfYear,
-                    mode: "workday"
-                }
-            ];
-            saveCounterEventsToStorage();
+            console.error("Failed to load counter events from API");
+            dayCounterEvents = [];
         }
     } catch (e) {
+        console.error("Error loading counters:", e);
         dayCounterEvents = [];
     }
     renderCounterEvents();
-}
-
-function saveCounterEventsToStorage() {
-    try {
-        localStorage.setItem(COUNTER_STORAGE_KEY, JSON.stringify(dayCounterEvents));
-    } catch (e) {
-        console.error("Failed to save counter events:", e);
-    }
 }
 
 let editingCounterEventId = null;
@@ -1771,7 +1755,8 @@ function renderCounterEvents() {
     const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     dayCounterEvents.forEach(evt => {
-        const target = new Date(evt.targetDate);
+        const targetDateStr = evt.target_date || evt.targetDate;
+        const target = new Date(targetDateStr);
         const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate());
 
         const diff = calculateDaysDifference(todayMidnight, targetMidnight);
@@ -1868,7 +1853,7 @@ function openEditCounterEvent(evt) {
     const editorTitle = document.getElementById("counter-editor-title");
 
     if (titleIn) titleIn.value = evt.title;
-    if (dateIn) dateIn.value = evt.targetDate;
+    if (dateIn) dateIn.value = evt.target_date || evt.targetDate;
     if (modeSel) modeSel.value = evt.mode || "workday";
     if (editorTitle) {
         editorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa sự kiện đếm ngày';
@@ -1903,10 +1888,17 @@ async function deleteCounterEvent(id) {
     );
     if (!confirmed) return;
 
-    dayCounterEvents = dayCounterEvents.filter(e => e.id !== id);
-    saveCounterEventsToStorage();
-    renderCounterEvents();
-    showToast("Đã xóa mốc sự kiện thành công!", "success");
+    try {
+        const res = await fetch(`/api/counters/${id}`, { method: "DELETE" });
+        if (res.ok) {
+            await loadCounterEventsFromApi();
+            showToast("Đã xóa mốc sự kiện thành công!", "success");
+        } else {
+            showToast("Không thể xóa mốc sự kiện.", "error");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối khi xóa sự kiện.", "error");
+    }
 }
 
 if (addCounterTargetBtn) {
@@ -1939,53 +1931,66 @@ if (counterCancelBtn) {
 }
 
 if (counterForm) {
-    counterForm.addEventListener("submit", (e) => {
+    counterForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const titleIn = document.getElementById("counter-title-input");
         const dateIn = document.getElementById("counter-date-input");
         const modeSel = document.getElementById("counter-mode-select");
 
         const title = titleIn ? titleIn.value.trim() : "";
-        const targetDate = dateIn ? dateIn.value : "";
+        const target_date = dateIn ? dateIn.value : "";
         const mode = modeSel ? modeSel.value : "workday";
 
-        if (!title || !targetDate) {
+        if (!title || !target_date) {
             showToast("Vui lòng điền đầy đủ tên và ngày mốc sự kiện.", "error");
             return;
         }
 
-        if (editingCounterEventId) {
-            dayCounterEvents = dayCounterEvents.map(evt => {
-                if (evt.id === editingCounterEventId) {
-                    return {
-                        ...evt,
+        try {
+            if (editingCounterEventId) {
+                const res = await fetch(`/api/counters/${editingCounterEventId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
                         title: title,
-                        targetDate: targetDate,
+                        target_date: target_date,
                         mode: mode
-                    };
+                    })
+                });
+                if (res.ok) {
+                    showToast("Cập nhật mốc sự kiện thành công!", "success");
+                    await loadCounterEventsFromApi();
+                    closeCounterEditor();
+                } else {
+                    showToast("Không thể cập nhật mốc sự kiện.", "error");
                 }
-                return evt;
-            });
-            showToast("Cập nhật mốc sự kiện thành công!", "success");
-        } else {
-            const newEvt = {
-                id: "counter_" + Date.now(),
-                title: title,
-                targetDate: targetDate,
-                mode: mode
-            };
-            dayCounterEvents.unshift(newEvt);
-            showToast("Thêm mốc sự kiện mới thành công!", "success");
+            } else {
+                const res = await fetch("/api/counters", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: title,
+                        target_date: target_date,
+                        mode: mode
+                    })
+                });
+                if (res.ok) {
+                    showToast("Thêm mốc sự kiện mới thành công!", "success");
+                    await loadCounterEventsFromApi();
+                    closeCounterEditor();
+                } else {
+                    showToast("Không thể tạo mốc sự kiện mới.", "error");
+                }
+            }
+        } catch (e) {
+            showToast("Lỗi kết nối máy chủ.", "error");
         }
-
-        saveCounterEventsToStorage();
-        renderCounterEvents();
-        closeCounterEditor();
     });
 }
 
 // Load events on initialize
-loadCounterEventsFromStorage();
+loadCounterEventsFromApi();
+
 
 
 /* =========================================================

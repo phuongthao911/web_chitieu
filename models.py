@@ -153,3 +153,80 @@ class RecurringTransaction(Base):
         String(7),  # "YYYY-MM"
         nullable=True
     )
+
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    title = Column(
+        String(255),
+        nullable=False
+    )
+
+    content_html = Column(
+        String,
+        nullable=False,
+        default=""
+    )
+
+    color = Column(
+        String(20),
+        nullable=False,
+        default="pink"
+    )
+
+    pinned = Column(
+        Integer,  # 0 or 1
+        nullable=False,
+        default=0
+    )
+
+    created_at = Column(
+        DateTime,
+        default=get_vietnam_time,
+        nullable=False
+    )
+
+    updated_at = Column(
+        String(50),
+        nullable=False,
+        default=""
+    )
+
+
+class DayCounter(Base):
+    __tablename__ = "day_counters"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    title = Column(
+        String(255),
+        nullable=False
+    )
+
+    target_date = Column(
+        String(20),  # YYYY-MM-DD
+        nullable=False
+    )
+
+    mode = Column(
+        String(20),  # "workday" or "calendar"
+        nullable=False,
+        default="workday"
+    )
+
+    created_at = Column(
+        DateTime,
+        default=get_vietnam_time,
+        nullable=False
+    )

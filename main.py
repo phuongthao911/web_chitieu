@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, reset_expenses_table_if_needed
-from models import Base, Expense, Category, Budget, RecurringTransaction, get_vietnam_time
+from models import Base, Expense, Category, Budget, RecurringTransaction, Note, DayCounter, get_vietnam_time
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -57,6 +57,48 @@ def seed_default_categories():
 
 seed_default_categories()
 
+def seed_default_notes_and_counters():
+    db = Session(bind=engine)
+    try:
+        if db.query(Note).count() == 0:
+            today_vn = get_vietnam_time().strftime("%d/%m/%Y")
+            default_notes = [
+                Note(
+                    title="Kế hoạch tiết kiệm tháng này",
+                    content_html="<p><strong>Mục tiêu:</strong> Dành ra ít nhất <u>20% thu nhập</u> chuyển vào Ví tiết kiệm đầu tháng ngay sau khi nhận lương.</p><ul><li>Hạn chế ăn ngoài quá 3 lần/tuần</li><li>Ghi chép chi tiêu mỗi ngày</li></ul>",
+                    color="pink",
+                    pinned=1,
+                    updated_at=today_vn
+                ),
+                Note(
+                    title="Danh sách đồ cần mua sắp tới",
+                    content_html="<ol><li>Thay dầu xe máy định kỳ</li><li>Mua sắm nhu yếu phẩm siêu thị cuối tuần</li><li>Kiểm tra gia hạn gói Internet</li></ol>",
+                    color="gold",
+                    pinned=0,
+                    updated_at=today_vn
+                )
+            ]
+            for n in default_notes:
+                db.add(n)
+            db.commit()
+
+        if db.query(DayCounter).count() == 0:
+            end_of_year = f"{get_vietnam_time().year}-12-31"
+            default_counter = DayCounter(
+                title=f"Kết thúc năm {get_vietnam_time().year}",
+                target_date=end_of_year,
+                mode="workday"
+            )
+            db.add(default_counter)
+            db.commit()
+    except Exception as e:
+        print("Error seeding default notes/counters:", e)
+        db.rollback()
+    finally:
+        db.close()
+
+seed_default_notes_and_counters()
+
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
@@ -99,9 +141,11 @@ def backup_json(db: Session = Depends(get_db)):
     categories = db.query(Category).all()
     budgets = db.query(Budget).all()
     recurring = db.query(RecurringTransaction).all()
+    notes = db.query(Note).order_by(Note.pinned.desc(), Note.id.desc()).all()
+    counters = db.query(DayCounter).order_by(DayCounter.id.desc()).all()
 
     data = {
-        "version": "2.0",
+        "version": "2.1",
         "exported_at": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
         "transactions": [serialize_expense(expense) for expense in expenses],
         "categories": [{"id": cat.id, "name": cat.name, "type": cat.type} for cat in categories],
@@ -119,6 +163,26 @@ def backup_json(db: Session = Depends(get_db)):
                 "last_executed_month": r.last_executed_month
             }
             for r in recurring
+        ],
+        "notes": [
+            {
+                "id": n.id,
+                "title": n.title,
+                "content_html": n.content_html,
+                "color": n.color,
+                "pinned": bool(n.pinned),
+                "updated_at": n.updated_at
+            }
+            for n in notes
+        ],
+        "counters": [
+            {
+                "id": c.id,
+                "title": c.title,
+                "target_date": c.target_date,
+                "mode": c.mode
+            }
+            for c in counters
         ]
     }
     filename = f"expense_backup_full_{get_vietnam_time().strftime('%Y%m%d_%H%M%S')}.json"
@@ -211,11 +275,15 @@ async def import_backup(request: Request, db: Session = Depends(get_db)):
         cat_list = []
         budget_list = []
         recurring_list = []
+        notes_list = []
+        counters_list = []
     elif isinstance(body, dict):
         tx_list = body.get("transactions", [])
         cat_list = body.get("categories", [])
         budget_list = body.get("budgets", [])
         recurring_list = body.get("recurring", [])
+        notes_list = body.get("notes", [])
+        counters_list = body.get("counters", [])
     else:
         raise HTTPException(status_code=400, detail="Invalid backup payload structure.")
     
@@ -223,6 +291,8 @@ async def import_backup(request: Request, db: Session = Depends(get_db)):
     imported_cats = 0
     imported_budgets = 0
     imported_recurring = 0
+    imported_notes = 0
+    imported_counters = 0
 
     # 1. Import Categories
     for item in cat_list:
@@ -276,7 +346,39 @@ async def import_backup(request: Request, db: Session = Depends(get_db)):
             db.add(rec)
             imported_recurring += 1
 
-    # 4. Import Transactions
+    # 4. Import Notes
+    for item in notes_list:
+        n_title = str(item.get("title", "")).strip()
+        n_content = str(item.get("content_html") or item.get("content") or "").strip()
+        n_color = str(item.get("color", "pink")).strip()
+        n_pinned = 1 if item.get("pinned") else 0
+        n_updated = str(item.get("updated_at") or get_vietnam_time().strftime("%d/%m/%Y")).strip()
+        if n_title and n_content:
+            note_obj = Note(
+                title=n_title,
+                content_html=n_content,
+                color=n_color,
+                pinned=n_pinned,
+                updated_at=n_updated
+            )
+            db.add(note_obj)
+            imported_notes += 1
+
+    # 5. Import Day Counters
+    for item in counters_list:
+        c_title = str(item.get("title", "")).strip()
+        c_date = str(item.get("target_date") or item.get("targetDate") or "").strip()
+        c_mode = str(item.get("mode", "workday")).strip()
+        if c_title and c_date:
+            counter_obj = DayCounter(
+                title=c_title,
+                target_date=c_date,
+                mode=c_mode
+            )
+            db.add(counter_obj)
+            imported_counters += 1
+
+    # 6. Import Transactions
     for item in tx_list:
         transaction_type = str(item.get("type", "")).strip()
         category = str(item.get("category", "")).strip()
@@ -322,9 +424,12 @@ async def import_backup(request: Request, db: Session = Depends(get_db)):
     if imported_cats: summary_parts.append(f"{imported_cats} danh mục mới")
     if imported_budgets: summary_parts.append(f"{imported_budgets} ngân sách")
     if imported_recurring: summary_parts.append(f"{imported_recurring} giao dịch định kỳ")
+    if imported_notes: summary_parts.append(f"{imported_notes} ghi chú")
+    if imported_counters: summary_parts.append(f"{imported_counters} mốc đếm ngày")
     
     msg = "Đã nhập thành công: " + (", ".join(summary_parts) if summary_parts else "0 mục") + "."
     return {"status": "ok", "message": msg}
+
 
 
 @app.post("/api/backup/import-csv")
@@ -899,3 +1004,167 @@ def startup_event():
         print("Error executing startup recurring tasks:", e)
     finally:
         db.close()
+
+
+# =========================================================
+# NOTES API (CRUD)
+# =========================================================
+def serialize_note(note: Note) -> dict:
+    return {
+        "id": note.id,
+        "title": note.title,
+        "content_html": note.content_html,
+        "color": note.color,
+        "pinned": bool(note.pinned),
+        "updated_at": note.updated_at
+    }
+
+
+@app.get("/api/notes")
+def get_notes(db: Session = Depends(get_db)):
+    notes = db.query(Note).order_by(Note.pinned.desc(), Note.id.desc()).all()
+    return [serialize_note(n) for n in notes]
+
+
+@app.post("/api/notes")
+async def create_note(request: Request, db: Session = Depends(get_db)):
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+
+    title = str(payload.get("title", "")).strip()
+    content_html = str(payload.get("content_html", "")).strip()
+    color = str(payload.get("color", "pink")).strip()
+    pinned = 1 if payload.get("pinned") else 0
+    updated_at = str(payload.get("updated_at") or get_vietnam_time().strftime("%d/%m/%Y")).strip()
+
+    if not title or not content_html:
+        raise HTTPException(status_code=400, detail="Title and content are required.")
+
+    note = Note(
+        title=title,
+        content_html=content_html,
+        color=color,
+        pinned=pinned,
+        updated_at=updated_at
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    return serialize_note(note)
+
+
+@app.put("/api/notes/{note_id}")
+async def update_note(note_id: int, request: Request, db: Session = Depends(get_db)):
+    note = db.query(Note).filter(Note.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found.")
+
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+
+    if "title" in payload:
+        note.title = str(payload["title"]).strip()
+    if "content_html" in payload:
+        note.content_html = str(payload["content_html"]).strip()
+    if "color" in payload:
+        note.color = str(payload["color"]).strip()
+    if "pinned" in payload:
+        note.pinned = 1 if payload["pinned"] else 0
+    if "updated_at" in payload:
+        note.updated_at = str(payload["updated_at"]).strip()
+    else:
+        note.updated_at = get_vietnam_time().strftime("%d/%m/%Y")
+
+    db.commit()
+    db.refresh(note)
+    return serialize_note(note)
+
+
+@app.delete("/api/notes/{note_id}")
+def delete_note(note_id: int, db: Session = Depends(get_db)):
+    note = db.query(Note).filter(Note.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found.")
+    db.delete(note)
+    db.commit()
+    return {"ok": True}
+
+
+# =========================================================
+# DAY COUNTER API (CRUD)
+# =========================================================
+def serialize_counter(counter: DayCounter) -> dict:
+    return {
+        "id": counter.id,
+        "title": counter.title,
+        "target_date": counter.target_date,
+        "mode": counter.mode
+    }
+
+
+@app.get("/api/counters")
+def get_counters(db: Session = Depends(get_db)):
+    counters = db.query(DayCounter).order_by(DayCounter.id.desc()).all()
+    return [serialize_counter(c) for c in counters]
+
+
+@app.post("/api/counters")
+async def create_counter(request: Request, db: Session = Depends(get_db)):
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+
+    title = str(payload.get("title", "")).strip()
+    target_date = str(payload.get("target_date", "")).strip()
+    mode = str(payload.get("mode", "workday")).strip()
+
+    if not title or not target_date:
+        raise HTTPException(status_code=400, detail="Title and target date are required.")
+
+    counter = DayCounter(
+        title=title,
+        target_date=target_date,
+        mode=mode
+    )
+    db.add(counter)
+    db.commit()
+    db.refresh(counter)
+    return serialize_counter(counter)
+
+
+@app.put("/api/counters/{counter_id}")
+async def update_counter(counter_id: int, request: Request, db: Session = Depends(get_db)):
+    counter = db.query(DayCounter).filter(DayCounter.id == counter_id).first()
+    if not counter:
+        raise HTTPException(status_code=404, detail="Day counter not found.")
+
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+
+    if "title" in payload:
+        counter.title = str(payload["title"]).strip()
+    if "target_date" in payload:
+        counter.target_date = str(payload["target_date"]).strip()
+    if "mode" in payload:
+        counter.mode = str(payload["mode"]).strip()
+
+    db.commit()
+    db.refresh(counter)
+    return serialize_counter(counter)
+
+
+@app.delete("/api/counters/{counter_id}")
+def delete_counter(counter_id: int, db: Session = Depends(get_db)):
+    counter = db.query(DayCounter).filter(DayCounter.id == counter_id).first()
+    if not counter:
+        raise HTTPException(status_code=404, detail="Day counter not found.")
+    db.delete(counter)
+    db.commit()
+    return {"ok": True}
