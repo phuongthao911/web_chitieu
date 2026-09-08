@@ -1108,8 +1108,28 @@ def serialize_counter(counter: DayCounter) -> dict:
 
 @app.get("/api/counters")
 def get_counters(db: Session = Depends(get_db)):
+    today_str = get_vietnam_time().strftime("%Y-%m-%d")
+    
+    # Check and delete expired events (events where target_date < today)
+    expired_counters = db.query(DayCounter).filter(DayCounter.target_date < today_str).all()
+    deleted_items = []
+    if expired_counters:
+        for c in expired_counters:
+            deleted_items.append({
+                "id": c.id,
+                "title": c.title,
+                "target_date": c.target_date,
+                "mode": c.mode
+            })
+            db.delete(c)
+        db.commit()
+
     counters = db.query(DayCounter).order_by(DayCounter.id.desc()).all()
-    return [serialize_counter(c) for c in counters]
+    return {
+        "counters": [serialize_counter(c) for c in counters],
+        "deleted_expired": deleted_items
+    }
+
 
 
 @app.post("/api/counters")

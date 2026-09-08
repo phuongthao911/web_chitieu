@@ -1723,11 +1723,67 @@ updateQuickRangeCalc();
 if (rangeStartDateInput) rangeStartDateInput.addEventListener("change", updateQuickRangeCalc);
 if (rangeEndDateInput) rangeEndDateInput.addEventListener("change", updateQuickRangeCalc);
 
+function showExpiredEventsPopup(deletedItems) {
+    if (!deletedItems || deletedItems.length === 0) return;
+
+    const popup = document.getElementById("counter-expired-popup");
+    const msgEl = document.getElementById("counter-expired-message");
+    const progressFill = popup ? popup.querySelector(".popup-progress-fill") : null;
+    if (!popup || !msgEl) return;
+
+    const count = deletedItems.length;
+    let itemsHtml = "";
+    deletedItems.forEach(item => {
+        const d = new Date(item.target_date);
+        const formattedDate = !isNaN(d.getTime())
+            ? d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+            : item.target_date;
+
+        itemsHtml += `
+            <div class="popup-expired-item">
+                <span class="popup-expired-item-title">📌 ${escapeHtml(item.title)}</span>
+                <span class="popup-expired-item-date">${formattedDate}</span>
+            </div>
+        `;
+    });
+
+    msgEl.innerHTML = `
+        <p style="margin-bottom: 8px;">Đã tự động xóa <strong>${count}</strong> sự kiện đếm ngày đã qua (hết ngày mốc):</p>
+        <div class="popup-expired-list">${itemsHtml}</div>
+    `;
+
+    // Reset progress animation
+    if (progressFill) {
+        progressFill.style.animation = "none";
+        progressFill.offsetHeight; /* trigger reflow */
+        progressFill.style.animation = "autoDismissCountdown 3s linear forwards";
+    }
+
+    popup.style.display = "flex";
+
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+        popup.style.display = "none";
+    }, 3000);
+}
+
+let hasCheckedExpiredNotification = false;
+
 async function loadCounterEventsFromApi() {
     try {
         const res = await fetch("/api/counters");
         if (res.ok) {
-            dayCounterEvents = await res.json();
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                dayCounterEvents = data;
+            } else if (data && typeof data === "object") {
+                dayCounterEvents = data.counters || [];
+                // Check if there are newly deleted expired events to notify once on app load
+                if (!hasCheckedExpiredNotification && data.deleted_expired && data.deleted_expired.length > 0) {
+                    hasCheckedExpiredNotification = true;
+                    showExpiredEventsPopup(data.deleted_expired);
+                }
+            }
         } else {
             console.error("Failed to load counter events from API");
             dayCounterEvents = [];

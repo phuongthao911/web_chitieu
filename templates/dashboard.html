@@ -744,7 +744,21 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=2.7"></script>
+    <!-- Expired Day Counter Popup Notification (Auto-dismiss in 3s) -->
+    <div id="counter-expired-popup" class="custom-modal-backdrop" style="display: none;">
+        <div class="custom-modal-card popup-card-alert">
+            <div class="custom-modal-icon info" id="counter-expired-icon">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <h3 class="custom-modal-title" id="counter-expired-title">Thông báo sự kiện đếm ngày</h3>
+            <div class="custom-modal-message" id="counter-expired-message"></div>
+            <div class="popup-auto-dismiss-bar">
+                <div class="popup-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=2.8"></script>
 
 </body>
 
