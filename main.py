@@ -1264,6 +1264,10 @@ async def create_counter(request: Request, db: Session = Depends(get_db)):
     if not title or not target_date:
         raise HTTPException(status_code=400, detail="Title and target date are required.")
 
+    today_str = get_vietnam_time().strftime("%Y-%m-%d")
+    if target_date < today_str:
+        raise HTTPException(status_code=400, detail="Không thể chọn ngày trong quá khứ.")
+
     counter = DayCounter(
         title=title,
         target_date=target_date,
@@ -1289,7 +1293,11 @@ async def update_counter(counter_id: int, request: Request, db: Session = Depend
     if "title" in payload:
         counter.title = str(payload["title"]).strip()
     if "target_date" in payload:
-        counter.target_date = str(payload["target_date"]).strip()
+        new_date = str(payload["target_date"]).strip()
+        today_str = get_vietnam_time().strftime("%Y-%m-%d")
+        if new_date < today_str:
+            raise HTTPException(status_code=400, detail="Không thể chọn ngày trong quá khứ.")
+        counter.target_date = new_date
     if "mode" in payload:
         counter.mode = str(payload["mode"]).strip()
 

@@ -1722,19 +1722,63 @@ function updateQuickRangeCalc() {
     }
 }
 
+// Local date helper to avoid UTC timezone offsets
+function getLocalDateString(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 // Initial defaults for quick range calculator: Today -> Next month same day
 const todayObj = new Date();
-const todayFormatted = todayObj.toISOString().split("T")[0];
+const todayFormatted = getLocalDateString(todayObj);
 const nextMonthObj = new Date();
 nextMonthObj.setMonth(nextMonthObj.getMonth() + 1);
-const nextMonthFormatted = nextMonthObj.toISOString().split("T")[0];
+const nextMonthFormatted = getLocalDateString(nextMonthObj);
 
-if (rangeStartDateInput) rangeStartDateInput.value = todayFormatted;
-if (rangeEndDateInput) rangeEndDateInput.value = nextMonthFormatted;
+if (rangeStartDateInput) {
+    rangeStartDateInput.min = todayFormatted;
+    rangeStartDateInput.value = todayFormatted;
+    rangeStartDateInput.addEventListener("change", () => {
+        if (rangeStartDateInput.value && rangeStartDateInput.value < todayFormatted) {
+            rangeStartDateInput.value = todayFormatted;
+            showToast("Không thể chọn ngày trong quá khứ.", "warning");
+        }
+        if (rangeEndDateInput) {
+            rangeEndDateInput.min = rangeStartDateInput.value || todayFormatted;
+            if (rangeEndDateInput.value && rangeEndDateInput.value < rangeStartDateInput.value) {
+                rangeEndDateInput.value = rangeStartDateInput.value;
+            }
+        }
+        updateQuickRangeCalc();
+    });
+}
+
+if (rangeEndDateInput) {
+    rangeEndDateInput.min = todayFormatted;
+    rangeEndDateInput.value = nextMonthFormatted;
+    rangeEndDateInput.addEventListener("change", () => {
+        const minAllowed = (rangeStartDateInput && rangeStartDateInput.value) || todayFormatted;
+        if (rangeEndDateInput.value && rangeEndDateInput.value < minAllowed) {
+            rangeEndDateInput.value = minAllowed;
+            showToast("Đến ngày không thể nhỏ hơn từ ngày hoặc ngày trong quá khứ.", "warning");
+        }
+        updateQuickRangeCalc();
+    });
+}
+
+if (counterDateInput) {
+    counterDateInput.min = todayFormatted;
+    counterDateInput.addEventListener("change", () => {
+        if (counterDateInput.value && counterDateInput.value < todayFormatted) {
+            counterDateInput.value = todayFormatted;
+            showToast("Không thể chọn ngày trong quá khứ. Vui lòng chọn ngày từ hôm nay trở đi.", "warning");
+        }
+    });
+}
+
 updateQuickRangeCalc();
-
-if (rangeStartDateInput) rangeStartDateInput.addEventListener("change", updateQuickRangeCalc);
-if (rangeEndDateInput) rangeEndDateInput.addEventListener("change", updateQuickRangeCalc);
 
 function showExpiredEventsPopup(deletedItems) {
     if (!deletedItems || deletedItems.length === 0) return;
@@ -1922,7 +1966,10 @@ function openEditCounterEvent(evt) {
     const editorTitle = document.getElementById("counter-editor-title");
 
     if (titleIn) titleIn.value = evt.title;
-    if (dateIn) dateIn.value = evt.target_date || evt.targetDate;
+    if (dateIn) {
+        dateIn.min = todayFormatted;
+        dateIn.value = evt.target_date || evt.targetDate;
+    }
     if (modeSel) modeSel.value = evt.mode || "workday";
     if (editorTitle) {
         editorTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa sự kiện đếm ngày';
@@ -1980,7 +2027,10 @@ if (addCounterTargetBtn) {
         const titleIn = document.getElementById("counter-title-input");
 
         if (formEl) formEl.reset();
-        if (dateIn) dateIn.value = todayFormatted;
+        if (dateIn) {
+            dateIn.min = todayFormatted;
+            dateIn.value = todayFormatted;
+        }
         if (editorTitle) {
             editorTitle.innerHTML = '<i class="fa-solid fa-thumbtack"></i> Thêm sự kiện / Mục tiêu đếm ngày';
         }
@@ -2015,6 +2065,14 @@ if (counterForm) {
             return;
         }
 
+        if (target_date < todayFormatted) {
+            showToast("Không thể chọn ngày trong quá khứ. Vui lòng chọn ngày từ hôm nay trở đi.", "error");
+            if (dateIn) {
+                dateIn.focus();
+            }
+            return;
+        }
+
         try {
             if (editingCounterEventId) {
                 const res = await fetch(`/api/counters/${editingCounterEventId}`, {
@@ -2031,7 +2089,8 @@ if (counterForm) {
                     await loadCounterEventsFromApi();
                     closeCounterEditor();
                 } else {
-                    showToast("Không thể cập nhật mốc sự kiện.", "error");
+                    const errData = await res.json().catch(() => ({}));
+                    showToast(errData.detail || "Không thể cập nhật mốc sự kiện.", "error");
                 }
             } else {
                 const res = await fetch("/api/counters", {
@@ -2048,7 +2107,8 @@ if (counterForm) {
                     await loadCounterEventsFromApi();
                     closeCounterEditor();
                 } else {
-                    showToast("Không thể tạo mốc sự kiện mới.", "error");
+                    const errData = await res.json().catch(() => ({}));
+                    showToast(errData.detail || "Không thể tạo mốc sự kiện mới.", "error");
                 }
             }
         } catch (e) {
