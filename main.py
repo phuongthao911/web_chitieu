@@ -171,7 +171,8 @@ def backup_json(db: Session = Depends(get_db)):
                 "content_html": n.content_html,
                 "color": n.color,
                 "pinned": bool(n.pinned),
-                "updated_at": n.updated_at
+                "updated_at": n.updated_at,
+                "created_at": n.created_at.strftime("%Y-%m-%d %H:%M:%S") if n.created_at else ""
             }
             for n in notes
         ],
@@ -180,7 +181,8 @@ def backup_json(db: Session = Depends(get_db)):
                 "id": c.id,
                 "title": c.title,
                 "target_date": c.target_date,
-                "mode": c.mode
+                "mode": c.mode,
+                "created_at": c.created_at.strftime("%Y-%m-%d %H:%M:%S") if c.created_at else ""
             }
             for c in counters
         ]
@@ -201,6 +203,8 @@ def backup_csv(db: Session = Depends(get_db)):
     categories = db.query(Category).all()
     budgets = db.query(Budget).all()
     recurring = db.query(RecurringTransaction).all()
+    notes = db.query(Note).order_by(Note.pinned.desc(), Note.id.desc()).all()
+    counters = db.query(DayCounter).order_by(DayCounter.id.desc()).all()
     
     import csv
     import io
@@ -255,6 +259,34 @@ def backup_csv(db: Session = Depends(get_db)):
             r.day_of_month,
             r.last_executed_month or "Chưa chạy",
             r.note
+        ])
+    writer.writerow([])
+
+    # Section 5: Notes
+    writer.writerow(["=== GHI CHÚ (NOTES) ==="])
+    writer.writerow(["ID", "Tiêu đề", "Nội dung", "Màu sắc", "Ghim (1/0)", "Cập nhật lúc", "Ngày tạo"])
+    for n in notes:
+        writer.writerow([
+            n.id,
+            n.title,
+            n.content_html,
+            n.color,
+            1 if n.pinned else 0,
+            n.updated_at,
+            n.created_at.strftime("%Y-%m-%d %H:%M:%S") if n.created_at else ""
+        ])
+    writer.writerow([])
+
+    # Section 6: Day Counters
+    writer.writerow(["=== ĐẾM NGÀY (DAY COUNTERS) ==="])
+    writer.writerow(["ID", "Tiêu đề sự kiện", "Ngày mốc (YYYY-MM-DD)", "Chế độ (workday/calendar)", "Ngày tạo"])
+    for c in counters:
+        writer.writerow([
+            c.id,
+            c.title,
+            c.target_date,
+            c.mode,
+            c.created_at.strftime("%Y-%m-%d %H:%M:%S") if c.created_at else ""
         ])
 
     filename = f"expense_backup_full_{get_vietnam_time().strftime('%Y%m%d_%H%M%S')}.csv"
@@ -353,13 +385,23 @@ async def import_backup(request: Request, db: Session = Depends(get_db)):
         n_color = str(item.get("color", "pink")).strip()
         n_pinned = 1 if item.get("pinned") else 0
         n_updated = str(item.get("updated_at") or get_vietnam_time().strftime("%d/%m/%Y")).strip()
-        if n_title and n_content:
+        created_at_str = item.get("created_at")
+        try:
+            if created_at_str:
+                created_at = datetime.strptime(created_at_str, "%Y-%m-%d %H:%M:%S")
+            else:
+                created_at = get_vietnam_time()
+        except Exception:
+            created_at = get_vietnam_time()
+
+        if n_title or n_content:
             note_obj = Note(
-                title=n_title,
+                title=n_title or "Ghi chú không tiêu đề",
                 content_html=n_content,
-                color=n_color,
+                color=n_color or "pink",
                 pinned=n_pinned,
-                updated_at=n_updated
+                updated_at=n_updated,
+                created_at=created_at
             )
             db.add(note_obj)
             imported_notes += 1
@@ -369,11 +411,21 @@ async def import_backup(request: Request, db: Session = Depends(get_db)):
         c_title = str(item.get("title", "")).strip()
         c_date = str(item.get("target_date") or item.get("targetDate") or "").strip()
         c_mode = str(item.get("mode", "workday")).strip()
+        created_at_str = item.get("created_at")
+        try:
+            if created_at_str:
+                created_at = datetime.strptime(created_at_str, "%Y-%m-%d %H:%M:%S")
+            else:
+                created_at = get_vietnam_time()
+        except Exception:
+            created_at = get_vietnam_time()
+
         if c_title and c_date:
             counter_obj = DayCounter(
                 title=c_title,
                 target_date=c_date,
-                mode=c_mode
+                mode=c_mode if c_mode in {"workday", "calendar"} else "workday",
+                created_at=created_at
             )
             db.add(counter_obj)
             imported_counters += 1
@@ -447,6 +499,8 @@ async def import_csv_backup(file: UploadFile = File(...), db: Session = Depends(
     imported_cats = 0
     imported_budgets = 0
     imported_recurring = 0
+    imported_notes = 0
+    imported_counters = 0
 
     current_section = "transactions"
     header = None
@@ -472,6 +526,14 @@ async def import_csv_backup(file: UploadFile = File(...), db: Session = Depends(
             continue
         elif "RECURRING" in first_cell or "=== GIAO DỊCH ĐỊNH KỲ" in first_cell:
             current_section = "recurring"
+            header = None
+            continue
+        elif "NOTES" in first_cell or "=== GHI CHÚ" in first_cell:
+            current_section = "notes"
+            header = None
+            continue
+        elif "DAY COUNTERS" in first_cell or "COUNTERS" in first_cell or "=== ĐẾM NGÀY" in first_cell:
+            current_section = "counters"
             header = None
             continue
 
@@ -600,6 +662,60 @@ async def import_csv_backup(file: UploadFile = File(...), db: Session = Depends(
                 db.add(rec)
                 imported_recurring += 1
 
+        elif current_section == "notes":
+            data = dict(zip(header, [c.strip() for c in row]))
+            n_title = data.get("tiêu đề") or data.get("title") or ""
+            n_content = data.get("nội dung") or data.get("content_html") or data.get("content") or ""
+            n_color = data.get("màu sắc") or data.get("color") or "pink"
+            pinned_raw = str(data.get("ghim (1/0)") or data.get("ghim") or data.get("pinned") or "0").strip().lower()
+            n_pinned = 1 if pinned_raw in {"1", "true", "yes", "có"} else 0
+            n_updated = data.get("cập nhật lúc") or data.get("updated_at") or get_vietnam_time().strftime("%d/%m/%Y")
+            date_raw = data.get("ngày tạo") or data.get("created_at") or ""
+            try:
+                if date_raw:
+                    created_at = datetime.strptime(date_raw, "%Y-%m-%d %H:%M:%S")
+                else:
+                    created_at = get_vietnam_time()
+            except Exception:
+                created_at = get_vietnam_time()
+
+            if n_title or n_content:
+                note_obj = Note(
+                    title=n_title or "Ghi chú không tiêu đề",
+                    content_html=n_content,
+                    color=n_color if n_color else "pink",
+                    pinned=n_pinned,
+                    updated_at=n_updated,
+                    created_at=created_at
+                )
+                db.add(note_obj)
+                imported_notes += 1
+
+        elif current_section == "counters":
+            data = dict(zip(header, [c.strip() for c in row]))
+            c_title = data.get("tiêu đề sự kiện") or data.get("tiêu đề") or data.get("title") or ""
+            c_date = data.get("ngày mốc (yyyy-mm-dd)") or data.get("ngày mốc") or data.get("target_date") or data.get("ngày") or ""
+            c_mode_raw = str(data.get("chế độ (workday/calendar)") or data.get("chế độ") or data.get("mode") or "workday").strip().lower()
+            c_mode = "calendar" if ("calendar" in c_mode_raw or "lịch" in c_mode_raw) else "workday"
+            date_raw = data.get("ngày tạo") or data.get("created_at") or ""
+            try:
+                if date_raw:
+                    created_at = datetime.strptime(date_raw, "%Y-%m-%d %H:%M:%S")
+                else:
+                    created_at = get_vietnam_time()
+            except Exception:
+                created_at = get_vietnam_time()
+
+            if c_title and c_date:
+                counter_obj = DayCounter(
+                    title=c_title,
+                    target_date=c_date,
+                    mode=c_mode,
+                    created_at=created_at
+                )
+                db.add(counter_obj)
+                imported_counters += 1
+
     db.commit()
 
     summary_parts = []
@@ -607,6 +723,8 @@ async def import_csv_backup(file: UploadFile = File(...), db: Session = Depends(
     if imported_cats: summary_parts.append(f"{imported_cats} danh mục mới")
     if imported_budgets: summary_parts.append(f"{imported_budgets} ngân sách")
     if imported_recurring: summary_parts.append(f"{imported_recurring} giao dịch định kỳ")
+    if imported_notes: summary_parts.append(f"{imported_notes} ghi chú")
+    if imported_counters: summary_parts.append(f"{imported_counters} mốc đếm ngày")
 
     msg = "Đã nhập CSV thành công: " + (", ".join(summary_parts) if summary_parts else "0 mục") + "."
     return {"status": "ok", "message": msg}

@@ -1229,7 +1229,12 @@ if (importJsonInput) {
                 if (Array.isArray(data)) {
                     itemCount = data.length;
                 } else if (data && typeof data === "object") {
-                    itemCount = (data.transactions?.length || 0) + (data.categories?.length || 0) + (data.budgets?.length || 0) + (data.recurring?.length || 0);
+                    itemCount = (data.transactions?.length || 0) + 
+                                (data.categories?.length || 0) + 
+                                (data.budgets?.length || 0) + 
+                                (data.recurring?.length || 0) + 
+                                (data.notes?.length || 0) + 
+                                (data.counters?.length || 0);
                 }
 
                 // Show confirming prompt
@@ -1252,7 +1257,7 @@ if (importJsonInput) {
                 const result = await response.json();
                 alert(result.message || "Nhập dữ liệu thành công!");
                 
-                // Reload transactions, categories, budgets, and recurring settings across all tabs
+                // Reload transactions, categories, budgets, recurring settings, notes, and day counters across all tabs
                 await loadTransactions();
                 if (typeof loadCategories === "function") {
                     await loadCategories();
@@ -1262,6 +1267,12 @@ if (importJsonInput) {
                 }
                 if (typeof loadRecurring === "function") {
                     await loadRecurring();
+                }
+                if (typeof loadNotesFromApi === "function") {
+                    await loadNotesFromApi();
+                }
+                if (typeof loadCounterEventsFromApi === "function") {
+                    await loadCounterEventsFromApi();
                 }
 
                 // Close backup dropdown
@@ -1308,11 +1319,13 @@ if (importCsvInput) {
             const result = await response.json();
             alert(result.message || "Nhập file CSV thành công!");
 
-            // Reload all data
+            // Reload all data across all tabs
             await loadTransactions();
             if (typeof loadCategories === "function") await loadCategories();
             if (typeof loadBudgets === "function") await loadBudgets();
             if (typeof loadRecurring === "function") await loadRecurring();
+            if (typeof loadNotesFromApi === "function") await loadNotesFromApi();
+            if (typeof loadCounterEventsFromApi === "function") await loadCounterEventsFromApi();
 
             if (backupDropdown) backupDropdown.classList.remove("show");
         } catch (error) {
