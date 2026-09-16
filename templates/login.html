@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | Expense Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=3.3">
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon-circle">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <h2>Chào mừng trở lại!</h2>
+                <p>Đăng nhập để tiếp tục quản lý chi tiêu cá nhân</p>
+            </div>
+
+            <div id="auth-alert" class="auth-alert" style="display: none;"></div>
+
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="username"><i class="fa-solid fa-user"></i> Tên đăng nhập</label>
+                    <input type="text" id="username" name="username" placeholder="Nhập username của bạn..." required autocomplete="username" autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fa-solid fa-lock"></i> Mật khẩu</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pwd" id="toggle-pwd-btn" tabindex="-1">
+                            <i class="fa-regular fa-eye" id="toggle-pwd-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn" class="auth-btn-primary">
+                    <span class="btn-text">Đăng nhập</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Chưa có tài khoản? <a href="/register" class="auth-link">Tạo tài khoản mới</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const alertBox = document.getElementById('auth-alert');
+        const togglePwdBtn = document.getElementById('toggle-pwd-btn');
+        const pwdInput = document.getElementById('password');
+        const togglePwdIcon = document.getElementById('toggle-pwd-icon');
+
+        togglePwdBtn.addEventListener('click', () => {
+            const isPassword = pwdInput.type === 'password';
+            pwdInput.type = isPassword ? 'text' : 'password';
+            togglePwdIcon.className = isPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+        });
+
+        function showAlert(msg, isError = true) {
+            alertBox.textContent = msg;
+            alertBox.className = 'auth-alert ' + (isError ? 'auth-alert-error' : 'auth-alert-success');
+            alertBox.style.display = 'block';
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alertBox.style.display = 'none';
+
+            const username = document.getElementById('username').value.trim();
+            const password = pwdInput.value;
+
+            if (!username || !password) {
+                showAlert('Vui lòng nhập đầy đủ thông tin');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang đăng nhập...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showAlert('Đăng nhập thành công! Đang chuyển hướng...', false);
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 500);
+                } else {
+                    showAlert(data.detail || 'Đăng nhập thất bại. Vui lòng thử lại.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span class="btn-text">Đăng nhập</span> <i class="fa-solid fa-arrow-right"></i>';
+                }
+            } catch (err) {
+                showAlert('Lỗi kết nối máy chủ. Vui lòng kiểm tra lại mạng.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="btn-text">Đăng nhập</span> <i class="fa-solid fa-arrow-right"></i>';
+            }
+        });
+    </script>
+</body>
+</html>

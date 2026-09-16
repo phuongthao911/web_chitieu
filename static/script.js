@@ -1,3 +1,15 @@
+// Global fetch interceptor to handle 401 Unauthorized seamlessly
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    if (response.status === 401) {
+        if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+            window.location.href = '/login';
+        }
+    }
+    return response;
+};
+
 let transactions = [];
 let expenseChart = null;
 let incomeChart = null;
@@ -71,6 +83,28 @@ function showConfirmModal(title, message, confirmText = "Đồng ý", cancelText
 
         okBtn.addEventListener("click", onOk);
         cancelBtn.addEventListener("click", onCancel);
+    });
+}
+
+// User Profile & Logout Handling
+const logoutBtn = document.getElementById("logout-btn");
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+        const confirmed = await showConfirmModal(
+            "Đăng xuất",
+            "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
+            "Đăng xuất",
+            "Ở lại",
+            "warning"
+        );
+        if (!confirmed) return;
+
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+            window.location.href = "/login";
+        } catch (err) {
+            window.location.href = "/login";
+        }
     });
 }
 

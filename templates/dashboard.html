@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Expense Tracker</title>
 
-    <link rel="stylesheet" href="/static/style.css?v=3.2">
+    <link rel="stylesheet" href="/static/style.css?v=3.3">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,28 +27,37 @@
                 <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
                 <p>Personal spending management</p>
             </div>
-            <div class="backup-container">
-                <button type="button" id="backup-btn" class="backup-btn">
-                    <i class="fa-solid fa-download-merge"></i> Dữ liệu
-                </button>
-                <div class="backup-dropdown" id="backup-dropdown">
-                    <div class="dropdown-section">
-                        <h4>Xuất toàn bộ dữ liệu (Export)</h4>
-                        <a href="/api/backup/json" download><i class="fa-solid fa-file-code"></i> Tải file JSON Backup (Đầy đủ)</a>
-                        <a href="/api/backup/csv" download><i class="fa-solid fa-file-csv"></i> Tải file CSV / Excel (Đầy đủ)</a>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-section">
-                        <h4>Nhập dữ liệu (Import Backup)</h4>
-                        <label for="import-json-file" class="import-label">
-                            <i class="fa-solid fa-file-import"></i> Chọn File JSON Backup
-                        </label>
-                        <input type="file" id="import-json-file" accept=".json" style="display: none;">
+            <div class="header-actions">
+                <div class="user-profile-badge" id="user-profile-badge" title="Tài khoản đang đăng nhập">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span class="user-name">{{ current_user.username if current_user else 'Admin' }}</span>
+                    <button type="button" id="logout-btn" class="logout-btn" title="Đăng xuất">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+                <div class="backup-container">
+                    <button type="button" id="backup-btn" class="backup-btn">
+                        <i class="fa-solid fa-download-merge"></i> Dữ liệu
+                    </button>
+                    <div class="backup-dropdown" id="backup-dropdown">
+                        <div class="dropdown-section">
+                            <h4>Xuất toàn bộ dữ liệu (Export)</h4>
+                            <a href="/api/backup/json" download><i class="fa-solid fa-file-code"></i> Tải file JSON Backup (Đầy đủ)</a>
+                            <a href="/api/backup/csv" download><i class="fa-solid fa-file-csv"></i> Tải file CSV / Excel (Đầy đủ)</a>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section">
+                            <h4>Nhập dữ liệu (Import Backup)</h4>
+                            <label for="import-json-file" class="import-label">
+                                <i class="fa-solid fa-file-import"></i> Chọn File JSON Backup
+                            </label>
+                            <input type="file" id="import-json-file" accept=".json" style="display: none;">
 
-                        <label for="import-csv-file" class="import-label" style="margin-top: 8px;">
-                            <i class="fa-solid fa-file-csv"></i> Chọn File CSV Backup / Excel
-                        </label>
-                        <input type="file" id="import-csv-file" accept=".csv" style="display: none;">
+                            <label for="import-csv-file" class="import-label" style="margin-top: 8px;">
+                                <i class="fa-solid fa-file-csv"></i> Chọn File CSV Backup / Excel
+                            </label>
+                            <input type="file" id="import-csv-file" accept=".csv" style="display: none;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -795,7 +804,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=3.1"></script>
+    <script src="/static/script.js?v=3.3"></script>
 
 </body>
 

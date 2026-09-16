@@ -1,5 +1,5 @@
 # pyrefly: ignore [missing-import]
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, UniqueConstraint
 from datetime import datetime, timezone, timedelta
 
 from database import Base
@@ -10,12 +10,47 @@ def get_vietnam_time() -> datetime:
     return datetime.now(vn_tz).replace(tzinfo=None)
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    username = Column(
+        String(100),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    password_hash = Column(
+        String(255),
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=get_vietnam_time,
+        nullable=False
+    )
+
+
 class Expense(Base):
     __tablename__ = "expenses"
 
     id = Column(
         Integer,
         primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
         index=True
     )
 
@@ -60,6 +95,9 @@ class Expense(Base):
 
 class Category(Base):
     __tablename__ = "categories"
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_user_category_name"),
+    )
 
     id = Column(
         Integer,
@@ -67,10 +105,16 @@ class Category(Base):
         index=True
     )
 
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
     name = Column(
         String(100),
-        nullable=False,
-        unique=True
+        nullable=False
     )
 
     type = Column(
@@ -85,6 +129,13 @@ class Budget(Base):
     id = Column(
         Integer,
         primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
         index=True
     )
 
@@ -110,6 +161,13 @@ class RecurringTransaction(Base):
     id = Column(
         Integer,
         primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
         index=True
     )
 
@@ -164,6 +222,13 @@ class Note(Base):
         index=True
     )
 
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
     title = Column(
         String(255),
         nullable=False
@@ -206,6 +271,13 @@ class DayCounter(Base):
     id = Column(
         Integer,
         primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
         index=True
     )
 
