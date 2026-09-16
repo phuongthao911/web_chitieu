@@ -551,17 +551,22 @@ function renderTable() {
         noteCell.textContent = transaction.note;
 
         const actionCell = document.createElement("td");
+        actionCell.classList.add("action-cell");
 
         const editButton = document.createElement("button");
         editButton.type = "button";
-        editButton.innerHTML = '<i class="fa-solid fa-pen"></i> Edit';
+        editButton.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        editButton.title = "Sửa giao dịch";
+        editButton.setAttribute("aria-label", "Sửa giao dịch");
         editButton.classList.add("edit-btn");
         editButton.addEventListener("click", () => enterEditMode(transaction));
         actionCell.appendChild(editButton);
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
-        deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Delete';
+        deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        deleteButton.title = "Xóa giao dịch";
+        deleteButton.setAttribute("aria-label", "Xóa giao dịch");
         deleteButton.classList.add("delete-btn");
         deleteButton.addEventListener("click", () => deleteTransaction(transaction.id));
         actionCell.appendChild(deleteButton);

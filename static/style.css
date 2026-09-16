@@ -65,7 +65,7 @@ body {
 ========================= */
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: auto;
 }
 
@@ -744,6 +744,36 @@ button:active {
     box-shadow: 0 6px 14px rgba(216, 92, 133, .12);
 }
 
+.action-cell,
+td:last-child {
+    white-space: nowrap;
+    text-align: center;
+    width: 96px;
+}
+
+.edit-btn,
+.delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    border-radius: 50%;
+    flex: none;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transition: transform .2s ease, box-shadow .2s ease;
+    vertical-align: middle;
+}
+
+.edit-btn i,
+.delete-btn i {
+    margin: 0 !important;
+}
+
 .edit-btn {
     background: linear-gradient(135deg, #8fd9c4, #5cb99a);
     margin-right: 6px;
@@ -751,6 +781,8 @@ button:active {
 
 .edit-btn:hover {
     background: linear-gradient(135deg, #7fd0b9, #4ea886);
+    transform: translateY(-2px) scale(1.08);
+    box-shadow: 0 6px 14px rgba(92, 185, 154, 0.35);
 }
 
 .delete-btn {
@@ -759,6 +791,8 @@ button:active {
 
 .delete-btn:hover {
     background: linear-gradient(135deg, #ef7189, #d94d73);
+    transform: translateY(-2px) scale(1.08);
+    box-shadow: 0 6px 14px rgba(232, 92, 133, 0.35);
 }
 
 tr.editing-row {
