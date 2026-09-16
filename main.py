@@ -340,12 +340,12 @@ def backup_csv(
     writer = csv.writer(output)
 
     # 1. Transactions Block
-    writer.writerow(["=== TRANSACTIONS / GIAO DỊCH ==="])
-    writer.writerow(["ID", "Loại", "Danh mục", "Ví", "Ví đích", "Số tiền (VND)", "Ghi chú", "Ngày tạo"])
+    writer.writerow(["=== GIAO DỊCH (TRANSACTIONS) ==="])
+    writer.writerow(["ID", "Loại giao dịch", "Danh mục", "Ví nguồn", "Ví đích", "Số tiền (VND)", "Ghi chú", "Ngày tạo"])
     for exp in expenses:
         writer.writerow([
             exp.id,
-            exp.transaction_type,
+            "Thu nhập" if exp.transaction_type == "Income" else ("Chuyển ví" if exp.transaction_type == "Transfer" else "Chi tiêu"),
             exp.category,
             exp.wallet,
             exp.destination_wallet or "",
@@ -357,49 +357,49 @@ def backup_csv(
     writer.writerow([])
 
     # 2. Categories Block
-    writer.writerow(["=== CATEGORIES / DANH MỤC ==="])
-    writer.writerow(["ID", "Tên danh mục", "Loại (income/expense)"])
+    writer.writerow(["=== DANH MỤC (CATEGORIES) ==="])
+    writer.writerow(["ID", "Tên danh mục", "Loại danh mục"])
     for cat in categories:
-        writer.writerow([cat.id, cat.name, cat.type])
+        writer.writerow([cat.id, cat.name, "Thu nhập" if cat.type == "income" else "Chi tiêu"])
 
     writer.writerow([])
 
     # 3. Budgets Block
-    writer.writerow(["=== BUDGETS / NGÂN SÁCH ==="])
-    writer.writerow(["ID", "Danh mục", "Hạn mức (VND)", "Tháng (YYYY-MM)"])
+    writer.writerow(["=== NGÂN SÁCH (BUDGETS) ==="])
+    writer.writerow(["ID", "Tên danh mục", "Hạn mức (VND)", "Tháng"])
     for b in budgets:
         writer.writerow([b.id, b.category_name, f"{b.amount_limit:,.0f}", b.month])
 
     writer.writerow([])
 
     # 4. Recurring Block
-    writer.writerow(["=== RECURRING / GIAO DỊCH ĐỊNH KỲ ==="])
-    writer.writerow(["ID", "Loại", "Số tiền (VND)", "Danh mục", "Ví", "Ví đích", "Ghi chú", "Ngày thực hiện", "Tháng chạy gần nhất"])
+    writer.writerow(["=== GIAO DỊCH ĐỊNH KỲ (RECURRING TRANSACTIONS) ==="])
+    writer.writerow(["ID", "Loại giao dịch", "Số tiền (VND)", "Danh mục", "Ví nguồn", "Ví đích", "Ngày tự động (1-31)", "Tháng chạy gần nhất", "Ghi chú"])
     for r in recurring:
         writer.writerow([
             r.id,
-            r.transaction_type,
+            "Thu nhập" if r.transaction_type == "Income" else ("Chuyển ví" if r.transaction_type == "Transfer" else "Chi tiêu"),
             f"{r.amount:,.0f}",
             r.category,
             r.wallet,
             r.destination_wallet or "",
-            r.note,
             r.day_of_month,
-            r.last_executed_month or ""
+            r.last_executed_month or "",
+            r.note
         ])
 
     writer.writerow([])
 
     # 5. Notes Block
-    writer.writerow(["=== NOTES / GHI CHÚ ==="])
-    writer.writerow(["ID", "Tiêu đề", "Nội dung", "Màu sắc", "Ghim", "Ngày cập nhật", "Ngày tạo"])
+    writer.writerow(["=== GHI CHÚ (NOTES) ==="])
+    writer.writerow(["ID", "Tiêu đề", "Nội dung", "Màu sắc", "Ghim (1/0)", "Cập nhật lúc", "Ngày tạo"])
     for n in notes:
         writer.writerow([
             n.id,
             n.title,
             n.content_html,
             n.color,
-            "Có" if n.pinned else "Không",
+            "1" if n.pinned else "0",
             n.updated_at,
             n.created_at.strftime("%Y-%m-%d %H:%M:%S") if n.created_at else ""
         ])
@@ -407,8 +407,8 @@ def backup_csv(
     writer.writerow([])
 
     # 6. Counters Block
-    writer.writerow(["=== DAY COUNTERS / ĐẾM NGÀY ==="])
-    writer.writerow(["ID", "Tiêu đề", "Ngày đích (YYYY-MM-DD)", "Chế độ (workday/calendar)", "Ngày tạo"])
+    writer.writerow(["=== ĐẾM NGÀY (DAY COUNTERS) ==="])
+    writer.writerow(["ID", "Tiêu đề sự kiện", "Ngày mốc (YYYY-MM-DD)", "Chế độ (workday/calendar)", "Ngày tạo"])
     for c in counters:
         writer.writerow([
             c.id,
@@ -648,29 +648,30 @@ async def import_backup_csv(
         if not row or not any(row):
             continue
         
-        first_cell = row[0].strip()
+        first_cell = row[0].strip().upper()
 
-        if "TRANSACTIONS" in first_cell or "=== GIAO DỊCH" in first_cell:
-            current_section = "transactions"
-            header = None
-            continue
-        elif "CATEGORIES" in first_cell or "=== DANH MỤC" in first_cell:
-            current_section = "categories"
-            header = None
-            continue
-        elif "BUDGETS" in first_cell or "=== NGÂN SÁCH" in first_cell:
-            current_section = "budgets"
-            header = None
-            continue
-        elif "RECURRING" in first_cell or "=== GIAO DỊCH ĐỊNH KỲ" in first_cell:
+        # Check section boundaries (Specific matches first to avoid prefix collisions)
+        if "RECURRING" in first_cell or "ĐỊNH KỲ" in first_cell:
             current_section = "recurring"
             header = None
             continue
-        elif "NOTES" in first_cell or "=== GHI CHÚ" in first_cell:
+        elif "TRANSACTION" in first_cell or "GIAO DỊCH" in first_cell:
+            current_section = "transactions"
+            header = None
+            continue
+        elif "CATEGOR" in first_cell or "DANH MỤC" in first_cell:
+            current_section = "categories"
+            header = None
+            continue
+        elif "BUDGET" in first_cell or "NGÂN SÁCH" in first_cell:
+            current_section = "budgets"
+            header = None
+            continue
+        elif "NOTE" in first_cell or "GHI CHÚ" in first_cell:
             current_section = "notes"
             header = None
             continue
-        elif "DAY COUNTERS" in first_cell or "COUNTERS" in first_cell or "=== ĐẾM NGÀY" in first_cell:
+        elif "DAY COUNTER" in first_cell or "COUNTER" in first_cell or "ĐẾM NGÀY" in first_cell:
             current_section = "counters"
             header = None
             continue
@@ -679,17 +680,18 @@ async def import_backup_csv(
             header = [c.strip().lower() for c in row]
             continue
         
+        data = dict(zip(header, [c.strip() for c in row]))
+
         if current_section == "transactions":
-            data = dict(zip(header, [c.strip() for c in row]))
-            t_type_raw = data.get("loại giao dịch") or data.get("loại") or data.get("type") or ""
-            if "thu" in t_type_raw.lower() or t_type_raw.lower() == "income":
+            t_type_raw = str(data.get("loại giao dịch") or data.get("loại") or data.get("type") or "").strip().lower()
+            if "thu" in t_type_raw or "income" in t_type_raw:
                 t_type = "Income"
-            elif "chuyển" in t_type_raw.lower() or t_type_raw.lower() == "transfer":
+            elif "chuyển" in t_type_raw or "transfer" in t_type_raw:
                 t_type = "Transfer"
             else:
                 t_type = "Expense"
 
-            category = data.get("danh mục") or data.get("category") or "Other"
+            category = data.get("danh mục") or data.get("category") or ("Chuyển ví" if t_type == "Transfer" else "Other")
             wallet = data.get("ví nguồn") or data.get("ví") or data.get("wallet") or "Tiền mặt"
             dest_wallet = data.get("ví đích") or data.get("destination_wallet") or None
             note = data.get("ghi chú") or data.get("note") or "-"
@@ -729,10 +731,26 @@ async def import_backup_csv(
             imported_tx += 1
 
         elif current_section == "categories":
-            data = dict(zip(header, [c.strip() for c in row]))
-            name = data.get("tên danh mục") or data.get("tên") or data.get("name")
-            c_type = (data.get("loại") or data.get("type") or "expense").strip().lower()
-            if name and c_type in {"income", "expense"}:
+            name = (
+                data.get("tên danh mục")
+                or data.get("tên")
+                or data.get("name")
+                or data.get("category")
+            )
+            raw_type = str(
+                data.get("loại danh mục")
+                or data.get("loại")
+                or data.get("loại (income/expense)")
+                or data.get("type")
+                or ""
+            ).strip().lower()
+
+            if "thu" in raw_type or "income" in raw_type:
+                c_type = "income"
+            else:
+                c_type = "expense"
+
+            if name:
                 existing = db.query(Category).filter(
                     Category.user_id == current_user.id,
                     Category.name == name
@@ -740,16 +758,34 @@ async def import_backup_csv(
                 if not existing:
                     db.add(Category(user_id=current_user.id, name=name, type=c_type))
                     imported_cats += 1
+                else:
+                    existing.type = c_type
+                    imported_cats += 1
 
         elif current_section == "budgets":
-            data = dict(zip(header, [c.strip() for c in row]))
-            c_name = data.get("danh mục") or data.get("category_name")
-            month = data.get("tháng (yyyy-mm)") or data.get("tháng") or data.get("month")
-            amount_raw = data.get("hạn mức (vnd)") or data.get("hạn mức") or data.get("amount_limit")
+            c_name = (
+                data.get("tên danh mục")
+                or data.get("danh mục")
+                or data.get("category_name")
+                or data.get("category")
+            )
+            month = (
+                data.get("tháng")
+                or data.get("tháng (yyyy-mm)")
+                or data.get("month")
+            )
+            amount_raw = (
+                data.get("hạn mức (vnd)")
+                or data.get("hạn mức")
+                or data.get("amount_limit")
+                or data.get("amount")
+                or "0"
+            )
             try:
                 limit = float(str(amount_raw).replace(",", "").replace("VND", "").replace("vnd", "").strip())
             except (ValueError, TypeError):
                 continue
+
             if c_name and month and limit >= 0:
                 existing = db.query(Budget).filter(
                     Budget.user_id == current_user.id,
@@ -760,23 +796,37 @@ async def import_backup_csv(
                     existing.amount_limit = limit
                 else:
                     db.add(Budget(user_id=current_user.id, category_name=c_name, month=month, amount_limit=limit))
-                    imported_budgets += 1
+                imported_budgets += 1
 
         elif current_section == "recurring":
-            data = dict(zip(header, [c.strip() for c in row]))
-            r_type = data.get("loại") or data.get("type") or "Expense"
+            raw_t = str(data.get("loại giao dịch") or data.get("loại") or data.get("type") or "").strip().lower()
+            if "thu" in raw_t or "income" in raw_t:
+                r_type = "Income"
+            elif "chuyển" in raw_t or "transfer" in raw_t:
+                r_type = "Transfer"
+            else:
+                r_type = "Expense"
+
             r_cat = data.get("danh mục") or data.get("category") or "Other"
-            r_wallet = data.get("ví") or data.get("wallet") or "Tiền mặt"
+            r_wallet = data.get("ví nguồn") or data.get("ví") or data.get("wallet") or "Tiền mặt"
             r_dest = data.get("ví đích") or data.get("destination_wallet") or None
             r_note = data.get("ghi chú") or data.get("note") or "-"
             amount_raw = data.get("số tiền (vnd)") or data.get("số tiền") or data.get("amount") or "0"
-            day_raw = data.get("ngày thực hiện") or data.get("day_of_month") or "1"
+            day_raw = (
+                data.get("ngày tự động (1-31)")
+                or data.get("ngày tự động")
+                or data.get("ngày thực hiện")
+                or data.get("day_of_month")
+                or "1"
+            )
+            last_month = data.get("tháng chạy gần nhất") or data.get("last_executed_month") or None
             try:
                 r_amount = float(str(amount_raw).replace(",", "").replace("VND", "").replace("vnd", "").strip())
                 r_day = int(str(day_raw).strip())
             except (ValueError, TypeError):
                 continue
-            if r_type in {"Income", "Expense", "Transfer"} and r_amount > 0 and 1 <= r_day <= 31:
+
+            if r_amount > 0 and 1 <= r_day <= 31:
                 db.add(RecurringTransaction(
                     user_id=current_user.id,
                     transaction_type=r_type,
@@ -785,18 +835,38 @@ async def import_backup_csv(
                     wallet=r_wallet,
                     destination_wallet=r_dest,
                     note=r_note,
-                    day_of_month=r_day
+                    day_of_month=r_day,
+                    last_executed_month=last_month
                 ))
                 imported_recurring += 1
 
         elif current_section == "notes":
-            data = dict(zip(header, [c.strip() for c in row]))
             title = data.get("tiêu đề") or data.get("title")
             content_html = data.get("nội dung") or data.get("content_html") or ""
             color = data.get("màu sắc") or data.get("color") or "pink"
-            pinned_raw = data.get("ghim") or data.get("pinned") or "Không"
-            pinned = 1 if "có" in str(pinned_raw).lower() or str(pinned_raw) in ("1", "true") else 0
-            updated_at = data.get("ngày cập nhật") or data.get("updated_at") or get_vietnam_time().strftime("%d/%m/%Y")
+            pinned_raw = str(
+                data.get("ghim (1/0)")
+                or data.get("ghim")
+                or data.get("pinned")
+                or "0"
+            ).strip().lower()
+            pinned = 1 if pinned_raw in ("1", "có", "true", "yes") else 0
+            updated_at = (
+                data.get("cập nhật lúc")
+                or data.get("ngày cập nhật")
+                or data.get("updated_at")
+                or get_vietnam_time().strftime("%d/%m/%Y")
+            )
+            created_at_raw = data.get("ngày tạo") or data.get("created_at")
+            note_created_at = None
+            if created_at_raw:
+                try:
+                    note_created_at = datetime.strptime(created_at_raw, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    try:
+                        note_created_at = datetime.strptime(created_at_raw, "%Y-%m-%d %H:%M")
+                    except ValueError:
+                        pass
             if title:
                 db.add(Note(
                     user_id=current_user.id,
@@ -804,15 +874,30 @@ async def import_backup_csv(
                     content_html=content_html,
                     color=color,
                     pinned=pinned,
-                    updated_at=updated_at
+                    updated_at=updated_at,
+                    created_at=note_created_at or get_vietnam_time()
                 ))
                 imported_notes += 1
 
         elif current_section == "counters":
-            data = dict(zip(header, [c.strip() for c in row]))
-            title = data.get("tiêu đề") or data.get("title")
-            target_date = data.get("ngày đích (yyyy-mm-dd)") or data.get("ngày đích") or data.get("target_date")
-            mode = data.get("chế độ (workday/calendar)") or data.get("chế độ") or data.get("mode") or "workday"
+            title = (
+                data.get("tiêu đề sự kiện")
+                or data.get("tiêu đề")
+                or data.get("title")
+            )
+            target_date = (
+                data.get("ngày mốc (yyyy-mm-dd)")
+                or data.get("ngày mốc")
+                or data.get("ngày đích (yyyy-mm-dd)")
+                or data.get("ngày đích")
+                or data.get("target_date")
+            )
+            mode = (
+                data.get("chế độ (workday/calendar)")
+                or data.get("chế độ")
+                or data.get("mode")
+                or "workday"
+            )
             if title and target_date:
                 db.add(DayCounter(
                     user_id=current_user.id,
