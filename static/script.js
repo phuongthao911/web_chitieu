@@ -103,8 +103,16 @@ const HISTORY_PAGE_SIZE = 10;
 
 const WALLET_ID_MAP = {
     "Tiền mặt": "cash",
-    "Tài khoản tiết kiệm": "savings",
-    "TK ngân hàng": "bank"
+    "TK ngân hàng": "bank",
+    "Tài khoản tiết kiệm": "savings"
+};
+
+let selectedWalletKey = null;
+
+const WALLET_CONFIG = {
+    "Tiền mặt": { idPrefix: "cash", icon: "fa-money-bill-wave", label: "Tiền mặt" },
+    "TK ngân hàng": { idPrefix: "bank", icon: "fa-building-columns", label: "Tài khoản ngân hàng" },
+    "Tài khoản tiết kiệm": { idPrefix: "savings", icon: "fa-piggy-bank", label: "Tài khoản tiết kiệm" }
 };
 const submitBtn = document.getElementById("submit-btn");
 const submitBtnLabel = document.getElementById("submit-btn-label");
@@ -256,6 +264,22 @@ function updateWalletSummary() {
         // Balance = Income + Incoming Transfers - Expense - Outgoing Transfers
         const balanceVal = income + incomingTransfersSum - expense - outgoingTransfersSum;
 
+        // Update card preview balance in the 3 main cards
+        const cardBalanceEl = document.getElementById(`wallet-${idPrefix}-card-balance`);
+        if (cardBalanceEl) cardBalanceEl.textContent = formatMoney(balanceVal);
+
+        // Update active detail panel if this wallet is currently selected
+        if (selectedWalletKey === walletName) {
+            const detailIncome = document.getElementById("wallet-detail-income");
+            const detailExpense = document.getElementById("wallet-detail-expense");
+            const detailBalance = document.getElementById("wallet-detail-balance");
+
+            if (detailIncome) detailIncome.textContent = formatMoney(income);
+            if (detailExpense) detailExpense.textContent = formatMoney(expense);
+            if (detailBalance) detailBalance.textContent = formatMoney(balanceVal);
+        }
+
+        // Keep compatibility with any legacy selectors
         const incomeEl = document.getElementById(`wallet-${idPrefix}-income`);
         const expenseEl = document.getElementById(`wallet-${idPrefix}-expense`);
         const walletBalanceEl = document.getElementById(`wallet-${idPrefix}-balance`);
@@ -264,6 +288,46 @@ function updateWalletSummary() {
         if (expenseEl) expenseEl.textContent = formatMoney(expense);
         if (walletBalanceEl) walletBalanceEl.textContent = formatMoney(balanceVal);
     });
+}
+
+function selectWalletDetail(walletKey) {
+    const detailSection = document.getElementById("wallet-detail-section");
+    const detailTitle = document.getElementById("wallet-detail-title");
+    const detailIcon = document.getElementById("wallet-detail-icon");
+
+    if (!detailSection) return;
+
+    if (selectedWalletKey === walletKey) {
+        // Toggle collapse if clicking the already open wallet card
+        selectedWalletKey = null;
+        detailSection.style.display = "none";
+        document.querySelectorAll(".wallet-card").forEach(c => {
+            c.classList.remove("active");
+            c.setAttribute("aria-expanded", "false");
+        });
+        return;
+    }
+
+    selectedWalletKey = walletKey;
+
+    document.querySelectorAll(".wallet-card").forEach(c => {
+        const isMatch = c.getAttribute("data-wallet") === walletKey;
+        c.classList.toggle("active", isMatch);
+        c.setAttribute("aria-expanded", isMatch ? "true" : "false");
+    });
+
+    const config = WALLET_CONFIG[walletKey];
+    if (config) {
+        if (detailTitle) detailTitle.textContent = `Chi tiết ví: ${config.label}`;
+        if (detailIcon) detailIcon.innerHTML = `<i class="fa-solid ${config.icon}"></i>`;
+    }
+
+    detailSection.style.display = "block";
+    updateWalletSummary();
+
+    if (window.innerWidth <= 768) {
+        detailSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
 }
 
 function updateChart() {
@@ -1006,6 +1070,40 @@ if (nextPageBtn) {
             currentHistoryPage++;
             renderTable();
         }
+    });
+}
+
+// Wallet Card interactive listeners
+document.querySelectorAll(".wallet-card").forEach(card => {
+    card.addEventListener("click", () => {
+        const wallet = card.getAttribute("data-wallet");
+        if (wallet) {
+            selectWalletDetail(wallet);
+        }
+    });
+    card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            const wallet = card.getAttribute("data-wallet");
+            if (wallet) {
+                selectWalletDetail(wallet);
+            }
+        }
+    });
+});
+
+const walletDetailCloseBtn = document.getElementById("wallet-detail-close");
+if (walletDetailCloseBtn) {
+    walletDetailCloseBtn.addEventListener("click", () => {
+        selectedWalletKey = null;
+        const detailSection = document.getElementById("wallet-detail-section");
+        if (detailSection) {
+            detailSection.style.display = "none";
+        }
+        document.querySelectorAll(".wallet-card").forEach(c => {
+            c.classList.remove("active");
+            c.setAttribute("aria-expanded", "false");
+        });
     });
 }
 
