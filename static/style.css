@@ -543,24 +543,29 @@ header::after {
 }
 
 .wallet-detail-close {
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
+    flex: none;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
     border: 1px solid #ffd1e0;
     background: var(--sakura-pale);
     color: var(--sakura-plum);
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 15px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: all .2s ease;
+    justify-content: center;
+    transition: all .25s ease;
+    box-shadow: 0 2px 6px rgba(216, 92, 133, 0.08);
 }
 
 .wallet-detail-close:hover {
     background: var(--sakura-rose);
     color: #ffffff;
     border-color: var(--sakura-rose);
+    transform: rotate(90deg) scale(1.08);
+    box-shadow: 0 4px 12px rgba(232, 92, 133, 0.3);
 }
 
 .wallet-stats-row {
