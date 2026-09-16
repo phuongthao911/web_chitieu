@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Expense Tracker</title>
 
-    <link rel="stylesheet" href="/static/style.css?v=2.7">
+    <link rel="stylesheet" href="/static/style.css?v=2.9">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -266,6 +266,19 @@
                             <!-- Rendered by JavaScript -->
                         </tbody>
                     </table>
+
+                    <div class="pagination-container" id="pagination-container">
+                        <div class="pagination-info" id="pagination-info"></div>
+                        <div class="pagination-controls">
+                            <button type="button" class="pagination-btn" id="prev-page-btn" title="Trang trước">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <div class="pagination-pages" id="pagination-pages"></div>
+                            <button type="button" class="pagination-btn" id="next-page-btn" title="Trang sau">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="chart-section">
@@ -758,7 +771,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=2.8"></script>
+    <script src="/static/script.js?v=2.9"></script>
 
 </body>
 

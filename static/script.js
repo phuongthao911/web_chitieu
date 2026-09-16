@@ -92,6 +92,15 @@ const historyWalletFilter = document.getElementById("history-wallet-filter");
 const historySearch = document.getElementById("history-search");
 const searchBtn = document.getElementById("search-btn");
 
+const paginationContainer = document.getElementById("pagination-container");
+const paginationInfo = document.getElementById("pagination-info");
+const paginationPages = document.getElementById("pagination-pages");
+const prevPageBtn = document.getElementById("prev-page-btn");
+const nextPageBtn = document.getElementById("next-page-btn");
+
+let currentHistoryPage = 1;
+const HISTORY_PAGE_SIZE = 10;
+
 const WALLET_ID_MAP = {
     "Tiền mặt": "cash",
     "Tài khoản tiết kiệm": "savings",
@@ -351,12 +360,89 @@ function getVisibleTransactions() {
     });
 }
 
+function renderPagination(totalItems, totalPages) {
+    if (!paginationContainer) return;
+
+    if (totalItems === 0) {
+        paginationContainer.style.display = "none";
+        return;
+    }
+
+    paginationContainer.style.display = "flex";
+
+    const startItem = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE + 1;
+    const endItem = Math.min(currentHistoryPage * HISTORY_PAGE_SIZE, totalItems);
+    if (paginationInfo) {
+        paginationInfo.innerHTML = `Hiển thị <strong>${startItem} - ${endItem}</strong> trên <strong>${totalItems}</strong> giao dịch`;
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentHistoryPage <= 1;
+    }
+    if (nextPageBtn) {
+        nextPageBtn.disabled = currentHistoryPage >= totalPages;
+    }
+
+    if (paginationPages) {
+        paginationPages.innerHTML = "";
+
+        let pagesToShow = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                pagesToShow.push(i);
+            }
+        } else {
+            if (currentHistoryPage <= 4) {
+                pagesToShow = [1, 2, 3, 4, 5, "...", totalPages];
+            } else if (currentHistoryPage >= totalPages - 3) {
+                pagesToShow = [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            } else {
+                pagesToShow = [1, "...", currentHistoryPage - 1, currentHistoryPage, currentHistoryPage + 1, "...", totalPages];
+            }
+        }
+
+        pagesToShow.forEach(page => {
+            if (page === "...") {
+                const ellipsis = document.createElement("span");
+                ellipsis.className = "pagination-ellipsis";
+                ellipsis.textContent = "…";
+                paginationPages.appendChild(ellipsis);
+            } else {
+                const pageBtn = document.createElement("button");
+                pageBtn.type = "button";
+                pageBtn.className = `pagination-btn page-num-btn${page === currentHistoryPage ? " active" : ""}`;
+                pageBtn.textContent = page;
+                pageBtn.setAttribute("aria-label", `Trang ${page}`);
+                if (page === currentHistoryPage) {
+                    pageBtn.setAttribute("aria-current", "page");
+                }
+                pageBtn.addEventListener("click", () => {
+                    if (currentHistoryPage !== page) {
+                        currentHistoryPage = page;
+                        renderTable();
+                    }
+                });
+                paginationPages.appendChild(pageBtn);
+            }
+        });
+    }
+}
+
 function renderTable() {
     const visibleTransactions = getVisibleTransactions();
+    const totalItems = visibleTransactions.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / HISTORY_PAGE_SIZE));
+
+    if (currentHistoryPage > totalPages) {
+        currentHistoryPage = totalPages;
+    }
+    if (currentHistoryPage < 1) {
+        currentHistoryPage = 1;
+    }
 
     tbody.innerHTML = "";
 
-    if (visibleTransactions.length === 0) {
+    if (totalItems === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
 
@@ -364,12 +450,16 @@ function renderTable() {
         cell.textContent = "No transactions found.";
         row.appendChild(cell);
         tbody.appendChild(row);
+        renderPagination(0, 0);
         updateSummary();
         updateChart();
         return;
     }
 
-    visibleTransactions.forEach(transaction => {
+    const startIndex = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE;
+    const pageTransactions = visibleTransactions.slice(startIndex, startIndex + HISTORY_PAGE_SIZE);
+
+    pageTransactions.forEach(transaction => {
         const row = document.createElement("tr");
 
         const typeCell = document.createElement("td");
@@ -427,6 +517,7 @@ function renderTable() {
         tbody.appendChild(row);
     });
 
+    renderPagination(totalItems, totalPages);
     updateSummary();
     updateChart();
 }
@@ -862,24 +953,60 @@ typeInput.addEventListener("change", () => {
     }
 });
 
-historyTypeFilter.addEventListener("change", renderTable);
-historyMonthFilter.addEventListener("change", renderTable);
-historyWalletFilter.addEventListener("change", renderTable);
+historyTypeFilter.addEventListener("change", () => {
+    currentHistoryPage = 1;
+    renderTable();
+});
+historyMonthFilter.addEventListener("change", () => {
+    currentHistoryPage = 1;
+    renderTable();
+});
+historyWalletFilter.addEventListener("change", () => {
+    currentHistoryPage = 1;
+    renderTable();
+});
 if (budgetMonthFilter) {
     budgetMonthFilter.addEventListener("change", loadBudgets);
 }
 window.saveCategoryBudget = saveCategoryBudget;
 
 if (historySearch) {
-    historySearch.addEventListener("input", renderTable);
+    historySearch.addEventListener("input", () => {
+        currentHistoryPage = 1;
+        renderTable();
+    });
     historySearch.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
+            currentHistoryPage = 1;
             renderTable();
         }
     });
 }
 if (searchBtn) {
-    searchBtn.addEventListener("click", renderTable);
+    searchBtn.addEventListener("click", () => {
+        currentHistoryPage = 1;
+        renderTable();
+    });
+}
+
+if (prevPageBtn) {
+    prevPageBtn.addEventListener("click", () => {
+        if (currentHistoryPage > 1) {
+            currentHistoryPage--;
+            renderTable();
+        }
+    });
+}
+
+if (nextPageBtn) {
+    nextPageBtn.addEventListener("click", () => {
+        const visibleTransactions = getVisibleTransactions();
+        const totalPages = Math.max(1, Math.ceil(visibleTransactions.length / HISTORY_PAGE_SIZE));
+        if (currentHistoryPage < totalPages) {
+            currentHistoryPage++;
+            renderTable();
+        }
+    });
 }
 
 // Category form listeners

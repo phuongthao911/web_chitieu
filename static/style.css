@@ -640,6 +640,105 @@ tbody tr:hover {
 }
 
 /* =========================
+   PAGINATION
+========================= */
+
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px dashed #ffd4e3;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.pagination-info {
+    font-size: 13.5px;
+    color: var(--sakura-plum-soft);
+    font-weight: 500;
+}
+
+.pagination-info strong {
+    color: var(--sakura-plum);
+    font-weight: 700;
+}
+
+.pagination-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pagination-pages {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid #ffd1e0;
+    background: var(--sakura-white);
+    color: var(--sakura-plum);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s ease;
+    box-shadow: 0 2px 5px rgba(216, 92, 133, 0.06);
+    user-select: none;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--sakura-pale);
+    border-color: var(--sakura-rose);
+    color: var(--sakura-deep);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(216, 92, 133, 0.15);
+}
+
+.pagination-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.pagination-btn.active {
+    background: linear-gradient(135deg, var(--sakura-rose), var(--sakura-deep));
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 4px 10px rgba(232, 92, 133, 0.3);
+    font-weight: 700;
+    cursor: default;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: #ffe0eb;
+    background: #faf5f7;
+    box-shadow: none;
+    transform: none;
+}
+
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 36px;
+    color: var(--sakura-plum-soft);
+    font-weight: 700;
+    font-size: 14px;
+    user-select: none;
+}
+
+/* =========================
    CHART
 ========================= */
 
@@ -776,6 +875,18 @@ button i {
     table{
         display:block;
         overflow-x:auto;
+    }
+
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
 }
