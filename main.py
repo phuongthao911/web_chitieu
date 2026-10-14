@@ -10,11 +10,18 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 # pyrefly: ignore [missing-import]
-from sqlalchemy import text
+from sqlalchemy import or_, text
+# pyrefly: ignore [missing-import]
+from sqlalchemy.exc import IntegrityError
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 
-from database import engine, get_db, migrate_database_multi_tenant
+from database import (
+    SHARED_CATEGORY_DEFINITIONS,
+    engine,
+    get_db,
+    migrate_database_multi_tenant,
+)
 from models import (
     Base,
     User,
@@ -42,43 +49,58 @@ ALLOWED_WALLETS = {"Tiền mặt", "Tài khoản tiết kiệm", "TK ngân hàng
 
 app = FastAPI()
 
-# Run database schema migrations for multi-tenancy
-migrate_database_multi_tenant()
-Base.metadata.create_all(bind=engine)
-
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 DEFAULT_USER_CATEGORIES = [
-    # Income categories
-    {"name": "Lương Ameno", "type": "income"},
-    {"name": "Lương Winggo", "type": "income"},
-    {"name": "Thu nhập khác", "type": "income"},
-    {"name": "Other", "type": "income"},
-    # Expense categories
-    {"name": "Đổ xăng", "type": "expense"},
-    {"name": "Ăn ngoài", "type": "expense"},
-    {"name": "Đi chợ", "type": "expense"},
-    {"name": "Chi phí phát sinh", "type": "expense"},
-    {"name": "Gửi xe", "type": "expense"},
-    {"name": "Đi chơi", "type": "expense"},
-    {"name": "Trả nợ", "type": "expense"},
-    {"name": "Quỹ Ameno", "type": "expense"},
-    {"name": "Shopping online", "type": "expense"},
+    {"name": name, "type": category_type}
+    for name, category_type in SHARED_CATEGORY_DEFINITIONS
 ]
 
 
-def seed_default_categories_for_user(db: Session, user_id: int):
-    """Seed initial categories for newly registered user."""
-    for cat in DEFAULT_USER_CATEGORIES:
-        existing = (
-            db.query(Category)
-            .filter(Category.user_id == user_id, Category.name == cat["name"])
-            .first()
-        )
-        if not existing:
-            db.add(Category(user_id=user_id, name=cat["name"], type=cat["type"]))
-    db.commit()
+def seed_shared_categories():
+    """Create the canonical common category catalog if it is missing."""
+    db = Session(bind=engine)
+    try:
+        for category in DEFAULT_USER_CATEGORIES:
+            existing = db.query(Category).filter(
+                Category.is_shared.is_(True),
+                Category.name == category["name"],
+            ).first()
+            if not existing:
+                db.add(Category(
+                    user_id=None,
+                    is_shared=True,
+                    name=category["name"],
+                    type=category["type"],
+                ))
+        db.commit()
+    finally:
+        db.close()
+
+
+# Run database schema migrations before SQLAlchemy creates missing tables, then seed once.
+migrate_database_multi_tenant()
+Base.metadata.create_all(bind=engine)
+seed_shared_categories()
+
+
+def visible_categories_query(db: Session, user_id: int):
+    return db.query(Category).filter(
+        or_(Category.is_shared.is_(True), Category.user_id == user_id)
+    )
+
+
+def is_visible_category(db: Session, user_id: int, name: str, category_type: str) -> bool:
+    return visible_categories_query(db, user_id).filter(
+        Category.name == name,
+        Category.type == category_type,
+    ).first() is not None
+
+
+def validate_visible_category(db: Session, user_id: int, name: str, category_type: str):
+    if not is_visible_category(db, user_id, name, category_type):
+        raise HTTPException(status_code=400, detail="Danh mục không tồn tại hoặc không thuộc tài khoản của bạn.")
 
 
 def serialize_expense(expense: Expense) -> dict:
@@ -169,9 +191,6 @@ async def api_register(request: Request, response: Response, db: Session = Depen
     db.add(user)
     db.commit()
     db.refresh(user)
-
-    # Seed starter categories for new user
-    seed_default_categories_for_user(db, user.id)
 
     # Create JWT token and set HttpOnly cookie
     token = create_access_token(user.id, user.username)
@@ -264,18 +283,21 @@ def backup_json(
         .order_by(Expense.created_at.desc(), Expense.id.desc())
         .all()
     )
-    categories = db.query(Category).filter(Category.user_id == current_user.id).all()
+    categories = visible_categories_query(db, current_user.id).all()
     budgets = db.query(Budget).filter(Budget.user_id == current_user.id).all()
     recurring = db.query(RecurringTransaction).filter(RecurringTransaction.user_id == current_user.id).all()
     notes = db.query(Note).filter(Note.user_id == current_user.id).order_by(Note.pinned.desc(), Note.id.desc()).all()
     counters = db.query(DayCounter).filter(DayCounter.user_id == current_user.id).order_by(DayCounter.id.desc()).all()
 
     data = {
-        "version": "3.0",
+        "version": "4.0",
         "exported_at": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
         "user": current_user.username,
         "transactions": [serialize_expense(expense) for expense in expenses],
-        "categories": [{"id": cat.id, "name": cat.name, "type": cat.type} for cat in categories],
+        "categories": [
+            {"id": cat.id, "name": cat.name, "type": cat.type, "is_shared": cat.is_shared}
+            for cat in categories
+        ],
         "budgets": [{"id": b.id, "category_name": b.category_name, "amount_limit": b.amount_limit, "month": b.month} for b in budgets],
         "recurring": [
             {
@@ -330,7 +352,7 @@ def backup_csv(
         .order_by(Expense.created_at.desc(), Expense.id.desc())
         .all()
     )
-    categories = db.query(Category).filter(Category.user_id == current_user.id).all()
+    categories = visible_categories_query(db, current_user.id).all()
     budgets = db.query(Budget).filter(Budget.user_id == current_user.id).all()
     recurring = db.query(RecurringTransaction).filter(RecurringTransaction.user_id == current_user.id).all()
     notes = db.query(Note).filter(Note.user_id == current_user.id).order_by(Note.pinned.desc(), Note.id.desc()).all()
@@ -463,12 +485,16 @@ async def import_backup(
         c_name = str(item.get("name", "")).strip()
         c_type = str(item.get("type", "")).strip().lower()
         if c_name and c_type in {"income", "expense"}:
-            existing = db.query(Category).filter(
-                Category.user_id == current_user.id,
+            existing = visible_categories_query(db, current_user.id).filter(
                 Category.name == c_name
             ).first()
             if not existing:
-                db.add(Category(user_id=current_user.id, name=c_name, type=c_type))
+                db.add(Category(
+                    user_id=current_user.id,
+                    is_shared=False,
+                    name=c_name,
+                    type=c_type,
+                ))
                 imported_cats += 1
 
     # 2. Import Budgets - enforce current_user.id
@@ -479,7 +505,9 @@ async def import_backup(
             limit = float(item.get("amount_limit", 0))
         except (TypeError, ValueError):
             continue
-        if cat_name and month and limit >= 0:
+        if cat_name and month and limit >= 0 and is_visible_category(
+            db, current_user.id, cat_name, "expense"
+        ):
             existing = db.query(Budget).filter(
                 Budget.user_id == current_user.id,
                 Budget.category_name == cat_name,
@@ -503,7 +531,11 @@ async def import_backup(
             r_day = int(item.get("day_of_month", 1))
         except (TypeError, ValueError):
             continue
-        if r_type in {"Income", "Expense", "Transfer"} and r_amount > 0 and 1 <= r_day <= 31:
+        is_valid_category = (
+            r_type == "Transfer"
+            or is_visible_category(db, current_user.id, r_cat, r_type.lower())
+        )
+        if r_type in {"Income", "Expense", "Transfer"} and r_amount > 0 and 1 <= r_day <= 31 and is_valid_category:
             rec = RecurringTransaction(
                 user_id=current_user.id,
                 transaction_type=r_type,
@@ -585,10 +617,16 @@ async def import_backup(
         else:
             created_at = get_vietnam_time()
 
+        category = category or ("Chuyển ví" if transaction_type == "Transfer" else "Other")
+        if transaction_type != "Transfer" and not is_visible_category(
+            db, current_user.id, category, transaction_type.lower()
+        ):
+            continue
+
         expense = Expense(
             user_id=current_user.id,
             transaction_type=transaction_type,
-            category=category or ("Chuyển ví" if transaction_type == "Transfer" else "Other"),
+            category=category,
             wallet=wallet if wallet in ALLOWED_WALLETS else "Tiền mặt",
             destination_wallet=destination_wallet if transaction_type == "Transfer" else None,
             amount=amount,
@@ -640,6 +678,7 @@ async def import_backup_csv(
     imported_recurring = 0
     imported_notes = 0
     imported_counters = 0
+    pending_transactions = []
 
     current_section = "transactions"
     header = None
@@ -717,18 +756,15 @@ async def import_backup_csv(
             else:
                 created_at = get_vietnam_time()
 
-            expense = Expense(
-                user_id=current_user.id,
-                transaction_type=t_type,
-                category=category or ("Chuyển ví" if t_type == "Transfer" else "Other"),
-                wallet=wallet if wallet in ALLOWED_WALLETS else "Tiền mặt",
-                destination_wallet=dest_wallet if t_type == "Transfer" else None,
-                amount=clean_amount,
-                note=note or "-",
-                created_at=created_at,
-            )
-            db.add(expense)
-            imported_tx += 1
+            pending_transactions.append({
+                "transaction_type": t_type,
+                "category": category or ("Chuyển ví" if t_type == "Transfer" else "Other"),
+                "wallet": wallet if wallet in ALLOWED_WALLETS else "Tiền mặt",
+                "destination_wallet": dest_wallet if t_type == "Transfer" else None,
+                "amount": clean_amount,
+                "note": note or "-",
+                "created_at": created_at,
+            })
 
         elif current_section == "categories":
             name = (
@@ -751,15 +787,16 @@ async def import_backup_csv(
                 c_type = "expense"
 
             if name:
-                existing = db.query(Category).filter(
-                    Category.user_id == current_user.id,
+                existing = visible_categories_query(db, current_user.id).filter(
                     Category.name == name
                 ).first()
                 if not existing:
-                    db.add(Category(user_id=current_user.id, name=name, type=c_type))
-                    imported_cats += 1
-                else:
-                    existing.type = c_type
+                    db.add(Category(
+                        user_id=current_user.id,
+                        is_shared=False,
+                        name=name,
+                        type=c_type,
+                    ))
                     imported_cats += 1
 
         elif current_section == "budgets":
@@ -786,7 +823,9 @@ async def import_backup_csv(
             except (ValueError, TypeError):
                 continue
 
-            if c_name and month and limit >= 0:
+            if c_name and month and limit >= 0 and is_visible_category(
+                db, current_user.id, c_name, "expense"
+            ):
                 existing = db.query(Budget).filter(
                     Budget.user_id == current_user.id,
                     Budget.category_name == c_name,
@@ -907,6 +946,17 @@ async def import_backup_csv(
                 ))
                 imported_counters += 1
 
+    for transaction in pending_transactions:
+        if transaction["transaction_type"] != "Transfer" and not is_visible_category(
+            db,
+            current_user.id,
+            transaction["category"],
+            transaction["transaction_type"].lower(),
+        ):
+            continue
+        db.add(Expense(user_id=current_user.id, **transaction))
+        imported_tx += 1
+
     db.commit()
 
     msg = f"Đã nhập thành công cho {current_user.username}: {imported_tx} giao dịch, {imported_cats} danh mục, {imported_budgets} ngân sách, {imported_recurring} định kỳ, {imported_notes} ghi chú, {imported_counters} đếm ngày."
@@ -959,6 +1009,7 @@ def create_transaction(
     else:
         if not category:
             raise HTTPException(status_code=400, detail="Category is required.")
+        validate_visible_category(db, current_user.id, category, transaction_type)
 
     if wallet not in ALLOWED_WALLETS:
         raise HTTPException(status_code=400, detail="Wallet is required.")
@@ -1019,6 +1070,7 @@ def update_transaction(
     else:
         if not category:
             raise HTTPException(status_code=400, detail="Category is required.")
+        validate_visible_category(db, current_user.id, category, transaction_type)
 
     if wallet not in ALLOWED_WALLETS:
         raise HTTPException(status_code=400, detail="Wallet is required.")
@@ -1059,13 +1111,26 @@ def delete_transaction(
 # =========================================================
 # CATEGORIES API (CRUD)
 # =========================================================
+def serialize_category(category: Category) -> dict:
+    return {
+        "id": category.id,
+        "name": category.name,
+        "type": category.type,
+        "is_shared": category.is_shared,
+    }
+
+
 @app.get("/api/categories")
 def list_categories(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    categories = db.query(Category).filter(Category.user_id == current_user.id).all()
-    return [{"id": cat.id, "name": cat.name, "type": cat.type} for cat in categories]
+    categories = (
+        visible_categories_query(db, current_user.id)
+        .order_by(Category.is_shared.desc(), Category.type, Category.name)
+        .all()
+    )
+    return [serialize_category(category) for category in categories]
 
 
 @app.post("/api/categories")
@@ -1082,19 +1147,20 @@ def create_category(
     if c_type not in {"income", "expense"}:
         raise HTTPException(status_code=400, detail="Loại danh mục phải là income hoặc expense.")
 
-    existing = db.query(Category).filter(
-        Category.user_id == current_user.id,
-        Category.name == name
-    ).first()
+    existing = visible_categories_query(db, current_user.id).filter(Category.name == name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Danh mục này đã tồn tại trong tài khoản của bạn.")
 
-    cat = Category(user_id=current_user.id, name=name, type=c_type)
-    db.add(cat)
-    db.commit()
-    db.refresh(cat)
+    category = Category(user_id=current_user.id, is_shared=False, name=name, type=c_type)
+    db.add(category)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Danh mục này đã tồn tại trong tài khoản của bạn.")
+    db.refresh(category)
 
-    return {"id": cat.id, "name": cat.name, "type": cat.type}
+    return serialize_category(category)
 
 
 @app.put("/api/categories/{category_id}")
@@ -1104,12 +1170,11 @@ def update_category(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    cat = db.query(Category).filter(
-        Category.id == category_id,
-        Category.user_id == current_user.id
-    ).first()
-    if not cat:
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category or (not category.is_shared and category.user_id != current_user.id):
         raise HTTPException(status_code=404, detail="Không tìm thấy danh mục.")
+    if category.is_shared:
+        raise HTTPException(status_code=403, detail="Không thể sửa danh mục chung.")
 
     name = str(payload.get("name", "")).strip()
     c_type = str(payload.get("type", "")).strip().lower()
@@ -1119,21 +1184,23 @@ def update_category(
     if c_type not in {"income", "expense"}:
         raise HTTPException(status_code=400, detail="Loại danh mục phải là income hoặc expense.")
 
-    # Check duplicate
-    existing = db.query(Category).filter(
-        Category.user_id == current_user.id,
+    existing = visible_categories_query(db, current_user.id).filter(
         Category.name == name,
-        Category.id != category_id
+        Category.id != category_id,
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Danh mục với tên này đã tồn tại.")
 
-    cat.name = name
-    cat.type = c_type
-    db.commit()
-    db.refresh(cat)
+    category.name = name
+    category.type = c_type
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Danh mục với tên này đã tồn tại.")
+    db.refresh(category)
 
-    return {"id": cat.id, "name": cat.name, "type": cat.type}
+    return serialize_category(category)
 
 
 @app.delete("/api/categories/{category_id}")
@@ -1142,14 +1209,13 @@ def delete_category(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    cat = db.query(Category).filter(
-        Category.id == category_id,
-        Category.user_id == current_user.id
-    ).first()
-    if not cat:
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category or (not category.is_shared and category.user_id != current_user.id):
         raise HTTPException(status_code=404, detail="Không tìm thấy danh mục.")
+    if category.is_shared:
+        raise HTTPException(status_code=403, detail="Không thể xóa danh mục chung.")
 
-    db.delete(cat)
+    db.delete(category)
     db.commit()
     return {"ok": True}
 
@@ -1167,8 +1233,9 @@ def get_budgets(
         raise HTTPException(status_code=400, detail="Invalid month format. Expected YYYY-MM.")
 
     categories = (
-        db.query(Category)
-        .filter(Category.user_id == current_user.id, Category.type == "expense")
+        visible_categories_query(db, current_user.id)
+        .filter(Category.type == "expense")
+        .order_by(Category.is_shared.desc(), Category.name)
         .all()
     )
     budgets = (
@@ -1218,6 +1285,7 @@ def save_budget(
 
     if not category_name or not month:
         raise HTTPException(status_code=400, detail="Category name and month are required.")
+    validate_visible_category(db, current_user.id, category_name, "expense")
     if amount_limit < 0:
         raise HTTPException(status_code=400, detail="Amount limit cannot be negative.")
 
@@ -1335,6 +1403,8 @@ def create_recurring(
         raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
     if t_type != "Transfer" and not category:
         raise HTTPException(status_code=400, detail="Category is required.")
+    if t_type != "Transfer":
+        validate_visible_category(db, current_user.id, category, t_type.lower())
     if wallet not in ALLOWED_WALLETS:
         raise HTTPException(status_code=400, detail="Wallet is invalid.")
     if t_type == "Transfer":

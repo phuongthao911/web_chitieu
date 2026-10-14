@@ -1,5 +1,17 @@
 # pyrefly: ignore [missing-import]
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    text,
+)
 from datetime import datetime, timezone, timedelta
 
 from database import Base
@@ -97,6 +109,17 @@ class Category(Base):
     __tablename__ = "categories"
     __table_args__ = (
         UniqueConstraint("user_id", "name", name="uq_user_category_name"),
+        CheckConstraint(
+            "(is_shared AND user_id IS NULL) OR (NOT is_shared AND user_id IS NOT NULL)",
+            name="ck_category_scope",
+        ),
+        Index(
+            "uq_shared_category_name",
+            "name",
+            unique=True,
+            sqlite_where=text("is_shared = 1"),
+            postgresql_where=text("is_shared = true"),
+        ),
     )
 
     id = Column(
@@ -108,7 +131,14 @@ class Category(Base):
     user_id = Column(
         Integer,
         ForeignKey("users.id"),
+        nullable=True,
+        index=True
+    )
+
+    is_shared = Column(
+        Boolean,
         nullable=False,
+        default=False,
         index=True
     )
 

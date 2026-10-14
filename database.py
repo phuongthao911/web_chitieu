@@ -36,6 +36,23 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 
+SHARED_CATEGORY_DEFINITIONS = (
+    ("Lương Ameno", "income"),
+    ("Lương Winggo", "income"),
+    ("Thu nhập khác", "income"),
+    ("Other", "income"),
+    ("Đổ xăng", "expense"),
+    ("Ăn ngoài", "expense"),
+    ("Đi chợ", "expense"),
+    ("Chi phí phát sinh", "expense"),
+    ("Gửi xe", "expense"),
+    ("Đi chơi", "expense"),
+    ("Trả nợ", "expense"),
+    ("Quỹ Ameno", "expense"),
+    ("Shopping online", "expense"),
+)
+
+
 def get_vietnam_time() -> datetime:
     vn_tz = timezone(timedelta(hours=7))
     return datetime.now(vn_tz).replace(tzinfo=None)
@@ -147,54 +164,127 @@ def migrate_database_multi_tenant():
                 ).fetchone()
                 if not t_exists:
                     continue
-                c_exists = conn.execute(
-                    text(f"SELECT 1 FROM information_schema.columns WHERE table_name='{tbl}' AND column_name='user_id'")
-                ).fetchone()
-                if not c_exists:
+                cols = [r[0] for r in conn.execute(text(
+                    f"SELECT column_name FROM information_schema.columns WHERE table_name='{tbl}'"
+                )).fetchall()]
+                if "user_id" not in cols:
                     conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN user_id INTEGER NULL"))
 
-            # Backfill existing rows without user_id
-            conn.execute(
-                text(f"UPDATE {tbl} SET user_id = :uid WHERE user_id IS NULL"),
-                {"uid": default_user_id}
-            )
+            # Shared categories deliberately have no owner. All other legacy rows belong to admin.
+            if tbl == "categories" and "is_shared" in cols:
+                conn.execute(
+                    text("UPDATE categories SET user_id = :uid WHERE user_id IS NULL AND is_shared = 0"),
+                    {"uid": default_user_id}
+                )
+            else:
+                conn.execute(
+                    text(f"UPDATE {tbl} SET user_id = :uid WHERE user_id IS NULL"),
+                    {"uid": default_user_id}
+                )
 
-        # 5. Migrate categories unique constraint to (user_id, name)
+        # 5. Upgrade categories from owner-only rows to explicit shared/private scope.
+        categories_table_exists = False
+        visibility_migration_needed = False
         if IS_SQLITE:
-            cat_row = conn.execute(
-                text("SELECT sql FROM sqlite_master WHERE type='table' AND name='categories'")
-            ).fetchone()
-            if cat_row and "UNIQUE (name)" in cat_row[0]:
-                conn.execute(text("""
-                    CREATE TABLE categories_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id INTEGER NOT NULL,
-                        name VARCHAR(100) NOT NULL,
-                        type VARCHAR(20) NOT NULL,
-                        CONSTRAINT uq_user_category_name UNIQUE (user_id, name)
-                    )
-                """))
-                conn.execute(text("""
-                    INSERT INTO categories_new (id, user_id, name, type)
-                    SELECT id, user_id, name, type FROM categories
-                """))
-                conn.execute(text("DROP TABLE categories"))
-                conn.execute(text("ALTER TABLE categories_new RENAME TO categories"))
+            cat_info = conn.execute(text("PRAGMA table_info(categories)")).fetchall()
+            categories_table_exists = bool(cat_info)
+            if cat_info:
+                category_columns = {row[1]: row for row in cat_info}
+                visibility_migration_needed = (
+                    "is_shared" not in category_columns
+                    or category_columns["user_id"][3] == 1
+                )
+                if visibility_migration_needed:
+                    conn.execute(text("""
+                        CREATE TABLE categories_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER NULL REFERENCES users(id),
+                            is_shared INTEGER NOT NULL DEFAULT 0,
+                            name VARCHAR(100) NOT NULL,
+                            type VARCHAR(20) NOT NULL,
+                            CONSTRAINT uq_user_category_name UNIQUE (user_id, name),
+                            CONSTRAINT ck_category_scope CHECK (
+                                (is_shared = 1 AND user_id IS NULL)
+                                OR (is_shared = 0 AND user_id IS NOT NULL)
+                            )
+                        )
+                    """))
+                    if "is_shared" in category_columns:
+                        conn.execute(text("""
+                            INSERT INTO categories_new (id, user_id, is_shared, name, type)
+                            SELECT id, user_id, is_shared, name, type FROM categories
+                        """))
+                    else:
+                        conn.execute(text("""
+                            INSERT INTO categories_new (id, user_id, is_shared, name, type)
+                            SELECT id, user_id, 0, name, type FROM categories
+                        """))
+                    conn.execute(text("DROP TABLE categories"))
+                    conn.execute(text("ALTER TABLE categories_new RENAME TO categories"))
+
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_categories_id ON categories (id)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_categories_user_id ON categories (user_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_categories_is_shared ON categories (is_shared)"))
+                conn.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_shared_category_name
+                    ON categories (name) WHERE is_shared = 1
+                """))
         else:
-            # PostgreSQL: drop old unique constraint if present, add composite unique index
-            conn.execute(text("""
-                DO $$
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1 FROM information_schema.table_constraints
-                        WHERE table_name = 'categories' AND constraint_name = 'categories_name_key'
-                    ) THEN
-                        ALTER TABLE categories DROP CONSTRAINT categories_name_key;
-                    END IF;
-                END $$;
-            """))
-            conn.execute(text("""
-                CREATE UNIQUE INDEX IF NOT EXISTS uq_user_category_name ON categories (user_id, name);
-            """))
+            categories_table_exists = conn.execute(
+                text("SELECT 1 FROM information_schema.tables WHERE table_name='categories'")
+            ).fetchone()
+            if categories_table_exists:
+                has_is_shared = conn.execute(text("""
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'categories' AND column_name = 'is_shared'
+                """)).fetchone()
+                visibility_migration_needed = not bool(has_is_shared)
+                conn.execute(text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT FALSE"))
+                conn.execute(text("ALTER TABLE categories ALTER COLUMN user_id DROP NOT NULL"))
+                conn.execute(text("""
+                    DO $$
+                    BEGIN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.table_constraints
+                            WHERE table_name = 'categories' AND constraint_name = 'categories_name_key'
+                        ) THEN
+                            ALTER TABLE categories DROP CONSTRAINT categories_name_key;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.table_constraints
+                            WHERE table_name = 'categories' AND constraint_name = 'ck_category_scope'
+                        ) THEN
+                            ALTER TABLE categories ADD CONSTRAINT ck_category_scope CHECK (
+                                (is_shared = TRUE AND user_id IS NULL)
+                                OR (is_shared = FALSE AND user_id IS NOT NULL)
+                            );
+                        END IF;
+                    END $$;
+                """))
+                conn.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_user_category_name ON categories (user_id, name)
+                """))
+                conn.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_shared_category_name
+                    ON categories (name) WHERE is_shared = TRUE
+                """))
+
+        # Promote only the approved starter catalog. Other existing categories remain private.
+        if categories_table_exists and visibility_migration_needed:
+            for name, category_type in SHARED_CATEGORY_DEFINITIONS:
+                conn.execute(text("""
+                    DELETE FROM categories
+                    WHERE is_shared = 0 AND name = :name AND type = :category_type
+                """), {"name": name, "category_type": category_type})
+
+                if IS_SQLITE:
+                    conn.execute(text("""
+                        INSERT OR IGNORE INTO categories (user_id, is_shared, name, type)
+                        VALUES (NULL, 1, :name, :category_type)
+                    """), {"name": name, "category_type": category_type})
+                else:
+                    conn.execute(text("""
+                        INSERT INTO categories (user_id, is_shared, name, type)
+                        VALUES (NULL, TRUE, :name, :category_type)
+                        ON CONFLICT (name) WHERE is_shared = TRUE DO NOTHING
+                    """), {"name": name, "category_type": category_type})

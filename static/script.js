@@ -204,20 +204,31 @@ function getColorForCategory(category) {
 
 let editingId = null;
 
+function appendCategoryOptions(select, categories, type) {
+    const sharedCategories = categories.filter(cat => cat.is_shared);
+    const privateCategories = categories.filter(cat => !cat.is_shared);
+
+    [["Danh mục chung", sharedCategories], ["Danh mục của bạn", privateCategories]].forEach(([label, groupCategories]) => {
+        if (!groupCategories.length) return;
+
+        const group = document.createElement("optgroup");
+        group.label = label;
+        groupCategories.forEach(cat => {
+            const option = document.createElement("option");
+            option.value = cat.name;
+            option.textContent = (type === "income" ? "💰 " : "💸 ") + cat.name;
+            group.appendChild(option);
+        });
+        select.appendChild(group);
+    });
+}
+
 function populateCategoryOptions(type, selectedCategory) {
     const options = dbCategories.filter(cat => cat.type === type);
-
     categoryInput.innerHTML = "";
-
-    options.forEach(cat => {
-        const option = document.createElement("option");
-        option.value = cat.name;
-        option.textContent = (type === "income" ? "💰 " : "💸 ") + cat.name;
-        categoryInput.appendChild(option);
-    });
+    appendCategoryOptions(categoryInput, options, type);
 
     const values = options.map(option => option.name);
-
     if (selectedCategory && values.includes(selectedCategory)) {
         categoryInput.value = selectedCategory;
     } else {
@@ -801,12 +812,7 @@ function populateRecurringCategoryOptions(type) {
     if (!recurringCategorySelect) return;
     const options = dbCategories.filter(cat => cat.type === type);
     recurringCategorySelect.innerHTML = "";
-    options.forEach(cat => {
-        const option = document.createElement("option");
-        option.value = cat.name;
-        option.textContent = cat.name;
-        recurringCategorySelect.appendChild(option);
-    });
+    appendCategoryOptions(recurringCategorySelect, options, type);
 }
 
 function renderCategoryList() {
@@ -821,25 +827,35 @@ function renderCategoryList() {
         const typeCell = document.createElement("td");
         typeCell.textContent = cat.type === "income" ? "Income" : "Expense";
 
+        const scopeCell = document.createElement("td");
+        const scopeBadge = document.createElement("span");
+        scopeBadge.className = cat.is_shared ? "category-scope-badge shared" : "category-scope-badge private";
+        scopeBadge.textContent = cat.is_shared ? "Chung" : "Riêng tư";
+        scopeCell.appendChild(scopeBadge);
+
         const actionCell = document.createElement("td");
+        if (!cat.is_shared) {
+            const editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "edit-btn";
+            editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+            editBtn.addEventListener("click", () => enterCategoryEditMode(cat));
 
-        const editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.className = "edit-btn";
-        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
-        editBtn.addEventListener("click", () => enterCategoryEditMode(cat));
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "delete-btn";
+            deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            deleteBtn.addEventListener("click", () => deleteCategory(cat.id));
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.className = "delete-btn";
-        deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-        deleteBtn.addEventListener("click", () => deleteCategory(cat.id));
-
-        actionCell.appendChild(editBtn);
-        actionCell.appendChild(deleteBtn);
+            actionCell.appendChild(editBtn);
+            actionCell.appendChild(deleteBtn);
+        } else {
+            actionCell.textContent = "—";
+        }
 
         row.appendChild(nameCell);
         row.appendChild(typeCell);
+        row.appendChild(scopeCell);
         row.appendChild(actionCell);
 
         categoryListTbody.appendChild(row);
