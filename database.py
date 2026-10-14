@@ -173,7 +173,7 @@ def migrate_database_multi_tenant():
             # Shared categories deliberately have no owner. All other legacy rows belong to admin.
             if tbl == "categories" and "is_shared" in cols:
                 conn.execute(
-                    text("UPDATE categories SET user_id = :uid WHERE user_id IS NULL AND is_shared = 0"),
+                    text("UPDATE categories SET user_id = :uid WHERE user_id IS NULL AND is_shared = FALSE"),
                     {"uid": default_user_id}
                 )
             else:
@@ -205,7 +205,7 @@ def migrate_database_multi_tenant():
                             CONSTRAINT uq_user_category_name UNIQUE (user_id, name),
                             CONSTRAINT ck_category_scope CHECK (
                                 (is_shared = 1 AND user_id IS NULL)
-                                OR (is_shared = 0 AND user_id IS NOT NULL)
+                                OR (is_shared = FALSE AND user_id IS NOT NULL)
                             )
                         )
                     """))
@@ -274,7 +274,7 @@ def migrate_database_multi_tenant():
             for name, category_type in SHARED_CATEGORY_DEFINITIONS:
                 conn.execute(text("""
                     DELETE FROM categories
-                    WHERE is_shared = 0 AND name = :name AND type = :category_type
+                    WHERE is_shared = FALSE AND name = :name AND type = :category_type
                 """), {"name": name, "category_type": category_type})
 
                 if IS_SQLITE:
